@@ -1,13 +1,16 @@
-from flask import render_template, request, redirect, url_for, Blueprint
-from flask_login import current_user, login_required
-
-player_api = Blueprint('player_api', __name__, template_folder='templates', url_prefix="/api")
-from app import engine, app
-from sqlalchemy.orm import Session, aliased
-from sqlalchemy import select, func
-from app import Matches, Player
-from app.utility import get_new_rating, dump_to_csv, serialize_player_to_json
 import json
+from flask import Blueprint
+from sqlalchemy import select
+from sqlalchemy.orm import Session
+from app import Player
+from app import engine
+from app.utility import serialize_player_to_json
+
+player_api = Blueprint(
+    'player_api',
+    __name__,
+    template_folder='templates',
+    url_prefix="/api")
 
 
 @player_api.route("/player/<int:player_id>", methods=['GET'])
@@ -21,5 +24,7 @@ def get_player(player_id):
         player_select = select(Player).where(Player.osu_id == player_id)
         player = session.execute(player_select).scalars().first()
         if player is None:
-            return json.dumps({'message': "The player is not found !"}), 404, {'Content-Type': 'application/json'}
-        return json.dumps(player, default=serialize_player_to_json), 200, {'Content-Type': 'application/json'}
+            return json.dumps({'message': "The player is not found !"}), 404, {
+                'Content-Type': 'application/json'}
+        return json.dumps(player, default=serialize_player_to_json), 200, {
+            'Content-Type': 'application/json'}

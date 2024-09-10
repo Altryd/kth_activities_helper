@@ -13,7 +13,7 @@ def get_new_rating(r0, opponents_rating, wins_first, wins_opponent, k=35):
     elif wins_first < wins_opponent:
         W = 0
     We = get_we(r0, opponents_rating)
-    return r0 + k*G*(W-We)
+    return r0 + k * G * (W - We)
 
 
 def get_g(wins_first, wins_second):
@@ -60,7 +60,6 @@ if __name__ == "__main__":
     print(f"difference for A: {rating_A_new - rating_A}")
     rating_B_new = get_new_rating(rating_B, rating_A, B_wins, A_wins)
     print(f"difference for B: {rating_B_new - rating_B}")
-
 
     print("\n\nteam B vs team C")
     print("Situation first: B:3 - C:1")
