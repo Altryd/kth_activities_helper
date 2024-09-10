@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Parse mplinks</title>
+</head>
+
+<body>
+<b>КОРРЕКТИРОВКА ПАР</b><br>
+Формат ввода: first_player_username,second_player_username <br>
+    <textarea id="mplinks" style="width: 500px; height: 250px" class="textarea"></textarea>
+<br>
+<b>Временно не использующиеся игроки</b><br>
+Формат ввода: player1_nickname,player2_nickname,player3_nickname,... (csv in one line)
+<br>
+    <textarea id="temporary_used_players" style="width: 500px;"></textarea>
+    <button onclick="parsePairCorrection()">PARSE</button>
+    <p id="result" style="display: none">
+
+    </p>
+</body>
+
+</html>
+<script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+<script>
+    function parsePairCorrection() {
+        let result = document.getElementById("result");
+        result.style.display = "";
+        result.innerHTML = "";
+        textarea_text = document.getElementById("mplinks");
+        temporary_used_players = document.getElementById("temporary_used_players").value;
+        //console.log(textarea_text.value);
+        pairs_correction = textarea_text.value;
+
+        axios.post('/api/create_pairs', {
+            pairs_correction: pairs_correction,
+            temporary_used_players: temporary_used_players,
+        }).then(data => {
+            let data_nicknames = data.data.pairs_nickname;
+            //console.log(data_nicknames);
+            result.innerHTML = "<b>NICKNAMES</b>: <br>";
+            for (let i = 0; i < data_nicknames.length; i++)
+            {
+                result.innerHTML += `${data_nicknames[i]}<br>`;
+            }
+            result.innerHTML += "<br><br><b>FOR DISCORD</b>: <br>";
+
+            let data_discord = data.data.pairs_discord;
+            for (let i = 0; i < data_discord.length; i++)
+            {
+                result.innerHTML += `${data_discord[i]}<br>`;
+            }
+
+
+            result.innerHTML += "<br><br><b>UNUSED</b>: <br>";
+            let data_unused = data.data.unused;
+            for (let i = 0; i < data_unused.length; i++)
+            {
+                result.innerHTML += `${data_unused[i]}<br>`;
+            }
+
+            result.innerHTML += "<br><br><b>PAIRS RAW</b>: <br>";
+            let pairs_row = data.data.pairs_row;
+            for (let i = 0; i < pairs_row.length; i++)
+            {
+                result.innerHTML += `${pairs_row[i]}<br>`;
+            }
+        }).catch(err => {
+            // console.log("error happened");
+            result.innerHTML += `${err.response.data.message}`;
+            console.log(err);
+        });
+        return;
+    }
+</script>

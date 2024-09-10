@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<!-- Демонстрация сыгранных матчей из базы данных -->
+<html lang="en">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet"
+    integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Matches</title>
+</head>
+
+<body>
+    <table class="table" style="text-align:center; vertical-align: middle">
+        <thead>
+            <td>first_player_rating</td>
+            <td>first_player_new_rating</td>
+            <td>first_player_nickname</td>
+            <td>first_player_score</td>
+            <td>second_player_score</td>
+            <td>second_player_nickname</td>
+            <td>second_player_new_rating</td>
+            <td>second_player_rating</td>
+            <td>approved ?</td>
+            <td></td>
+        </thead>
+        {% for match in matches %}
+        {% if match['is_approved'] %}
+        <tr style="background-color: #a0c59f">
+            {% else %}
+        <tr style="background-color: #d7d6d6">
+            {% endif %}
+            <td>{{ match['first_rating']}}</td>
+            <td>{{ match['first_rating_new']}}</td>
+            <td>{{ match['first_nickname']}}</td>
+            <td>{{ match['first_player_score']}}</td>
+            <td>{{ match['second_player_score']}}</td>
+            <td>{{ match['second_nickname']}}</td>
+            <td>{{ match['second_rating_new']}}</td>
+            <td>{{ match['second_rating']}}</td>
+            <td>{{ "Yes" if match['is_approved'] else "No" }}</td>
+            {% if not match['is_approved'] %}
+            <td><button id="{{ match['id']}}" class="btn btn-outline-success"
+                    onclick="approveMatch({{match['id']}})">Approve</button></td>
+            {% endif %}
+        </tr>
+        {% endfor %}
+</body>
+</table>
+
+</html>
+<script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+<script>
+    function approveMatch(matchId) {
+        // console.log("ky" + matchId);
+        let id_to_send = Number(matchId);
+        axios.post('/api/approve_match', {
+            id: id_to_send,
+        }).then(data => {
+            // console.log("approved !" + matchId);
+            location.reload();
+        }).catch(err => {
+            // console.log("error happened");
+            // console.log(err);
+        });
+        return;
+    }
+</script>
