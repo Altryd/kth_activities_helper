@@ -1,8 +1,9 @@
 # Ветка для дальнейшей разработки под Go
 Пока что загрузил сюда python код, но потом он уберется и останется только на ветке https://github.com/Altryd/kth_activities_helper/tree/python_code
 
-### Внутри используется этот проект https://github.com/Altryd/osuParseMpLinks 
-для его установки:
+### Информация про питон ветку: 
+Внутри используется этот проект https://github.com/Altryd/osuParseMpLinks, для его установки нужно прописать:
+
 `pip install git+https://github.com/Altryd/osuParseMpLinks.git`
 
 Основное, что нужно будет 100% перенести на Go:
