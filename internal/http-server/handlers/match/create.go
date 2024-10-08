@@ -16,7 +16,7 @@ type Request struct {
 	Date   time.Time `json:"date" validate:"required,datetime"`
 }
 
-type Response struct {
+type CreateResponse struct {
 	resp.Response
 	MatchId uint64 `json:"match_id,omitempty"`
 }
@@ -49,17 +49,16 @@ func New(log *slog.Logger, matchCreator MatchCreator) http.HandlerFunc {
 			return
 		}
 
-		// TODO Создать запись в бд и обработать ошибку
 		id, err := matchCreator.CreateMatch(req.Id, req.TypeId, req.Date)
 		if err != nil {
-			log.Error("Failed to create match", slog.String("error", err.Error()))
+			localLog.Error("Failed to create match", slog.String("error", err.Error()))
 			render.JSON(w, r, resp.Error("Failed to create match"))
 		}
 
 		// TODO delete
-		log.Info("Created match", slog.Uint64("match_id", id))
+		localLog.Info("Created match", slog.Uint64("match_id", id))
 
-		render.JSON(w, r, Response{
+		render.JSON(w, r, CreateResponse{
 			Response: resp.OK(),
 			MatchId:  id,
 		})

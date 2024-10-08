@@ -1,4 +1,4 @@
-package match
+package matchType
 
 import (
 	"github.com/go-chi/chi/v5/middleware"
@@ -19,10 +19,10 @@ type Response struct {
 }
 
 type MatchTypeCreator interface {
-	CreateMatchType(matchTypeName string)
+	CreateMatchType(matchTypeName string) (uint64, error)
 }
 
-func New(log *slog.Logger) http.HandlerFunc {
+func New(log *slog.Logger, matchTypeCreator MatchTypeCreator) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const op = "handlers.matchType.create.New"
 		localLog := log.With(
@@ -46,7 +46,19 @@ func New(log *slog.Logger) http.HandlerFunc {
 			return
 		}
 
-		// TODO Создать запись в бд и обработать ошибку
+		id, err := matchTypeCreator.CreateMatchType(req.Name)
+		if err != nil {
+			localLog.Error("Failed to create match type", slog.String("error", err.Error()))
+			render.JSON(w, r, resp.Error("Failed to create match type"))
+		}
+
+		// TODO delete
+		localLog.Info("Created match type", slog.Uint64("match_type_id", id))
+
+		render.JSON(w, r, Response{
+			Response:    resp.OK(),
+			MatchTypeId: id,
+		})
 
 		render.JSON(w, r, resp.OK())
 		return

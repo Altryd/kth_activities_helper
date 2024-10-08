@@ -42,6 +42,15 @@ func New(cfg *config.Config, log *slog.Logger) (*Storage, error) {
 
 //TODO Все что ниже поместить в отдельный репозиторий
 
+func (storage *Storage) SelectMatchTypes() ([]models.MatchType, error) {
+	var matchTypes []models.MatchType
+	result := storage.db.Find(&matchTypes)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	return matchTypes, nil
+}
+
 func (storage *Storage) CreateMatchType(matchTypeName string) (uint64, error) {
 	matchTypeToCreate := models.MatchType{Name: matchTypeName}
 	result := storage.db.Create(&matchTypeToCreate)
@@ -60,6 +69,15 @@ func (storage *Storage) CreateMatchType(matchTypeName string) (uint64, error) {
 //
 //	return result., nil
 //}
+
+func (storage *Storage) SelectMatches() ([]models.Matches, error) {
+	matches := []models.Matches{}
+	result := storage.db.Find(&matches)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	return matches, nil
+}
 
 func (storage *Storage) CreateMatch(matchId uint64, matchTypeId uint64, matchDate time.Time) (uint64, error) {
 	matchToCreate := models.Matches{Id: matchId, MatchTypeId: matchTypeId, Date: matchDate}

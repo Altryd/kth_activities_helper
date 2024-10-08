@@ -7,6 +7,7 @@ import (
 	"kth_activities_helper/internal/config"
 	"kth_activities_helper/internal/database"
 	"kth_activities_helper/internal/http-server/handlers/match"
+	"kth_activities_helper/internal/http-server/handlers/matchType"
 	"log/slog"
 	"net/http"
 	"os"
@@ -24,11 +25,11 @@ func main() {
 		os.Exit(-1)
 	}
 
-	id, err := storage.CreateMatchType("MeowMeowMeow")
-	if err != nil {
-		os.Exit(-1)
-	}
-	log.Info("Inserted MatchType: ", slog.Uint64("id", id))
+	//id, err := storage.CreateMatchType("MeowMeowMeow")
+	//if err != nil {
+	//	os.Exit(-1)
+	//}
+	//log.Info("Inserted MatchType: ", slog.Uint64("id", id))
 
 	router := chi.NewRouter()
 	//middleware
@@ -36,7 +37,11 @@ func main() {
 	router.Use(middleware.Recoverer)
 	router.Use(middleware.URLFormat)
 
-	router.Get("/api/match", match.New(log, storage)) // todo match.New(log, storage)
+	router.Get("/api/matches", match.GetAll(log, storage))
+	router.Post("/api/match", match.New(log, storage))
+
+	router.Get("/api/matchTypes", matchType.GetAll(log, storage))
+	router.Post("/api/matchType", matchType.New(log, storage))
 
 	srv := http.Server{
 		Addr:              cfg.HTTPServer.Address,
