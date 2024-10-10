@@ -40,7 +40,7 @@ func New(cfg *config.Config, log *slog.Logger) (*Storage, error) {
 	return storage, nil
 }
 
-//TODO Все что ниже поместить в отдельный репозиторий
+//MatchTypeRepository
 
 func (storage *Storage) SelectMatchTypes() ([]models.MatchType, error) {
 	var matchTypes []models.MatchType
@@ -61,14 +61,7 @@ func (storage *Storage) CreateMatchType(matchTypeName string) (uint64, error) {
 	return matchTypeToCreate.ID, nil
 }
 
-//func (storage *Storage) GetMatchTypes(matchTypeId uint64) (string, error) {
-//	result := storage.db.Get()
-//	if result.Error != nil {
-//		return "", result.Error
-//	}
-//
-//	return result., nil
-//}
+//MatchRepository
 
 func (storage *Storage) SelectMatches() ([]models.Matches, error) {
 	matches := []models.Matches{}
@@ -79,6 +72,15 @@ func (storage *Storage) SelectMatches() ([]models.Matches, error) {
 	return matches, nil
 }
 
+func (storage *Storage) SelectOneMatch(id uint64) (models.Matches, error) {
+	match := models.Matches{}
+	result := storage.db.First(&match, id)
+	if result.Error != nil {
+		return models.Matches{}, result.Error
+	}
+	return match, nil
+}
+
 func (storage *Storage) CreateMatch(matchId uint64, matchTypeId uint64, matchDate time.Time) (uint64, error) {
 	matchToCreate := models.Matches{Id: matchId, MatchTypeId: matchTypeId, Date: matchDate}
 	result := storage.db.Create(&matchToCreate)
@@ -86,4 +88,66 @@ func (storage *Storage) CreateMatch(matchId uint64, matchTypeId uint64, matchDat
 		return 0, result.Error
 	}
 	return matchToCreate.Id, nil
+}
+
+func (storage *Storage) EditMatch(matchId uint64, matchTypeId uint64, matchDate time.Time, isApproved bool) (models.Matches, error) {
+	match := models.Matches{}
+	result := storage.db.First(&match, matchId)
+	if result.Error != nil {
+		return models.Matches{}, result.Error
+	}
+	match.MatchTypeId = matchTypeId
+	match.Date = matchDate
+	match.IsApproved = isApproved
+	result = storage.db.Save(&match)
+	if result.Error != nil {
+		return models.Matches{}, result.Error
+	}
+	return match, nil
+}
+
+// UserRepository
+
+func (storage *Storage) SelectUsers() ([]models.User, error) {
+	users := []models.User{}
+	result := storage.db.Find(&users)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	return users, nil
+}
+
+func (storage *Storage) SelectOneUser(osuId uint64) (models.User, error) {
+	user := models.User{}
+	result := storage.db.First(&user, osuId)
+	if result.Error != nil {
+		return models.User{}, result.Error
+	}
+	return user, nil
+}
+
+func (storage *Storage) CreateUser(osuId uint64, discordId uint64, rating uint32, username string, active bool) (uint64, error) {
+	userToCreate := models.User{OsuId: osuId, DiscordId: discordId, Rating: rating, Username: username, Active: active}
+	result := storage.db.Create(&userToCreate)
+	if result.Error != nil {
+		return 0, result.Error
+	}
+	return userToCreate.OsuId, nil
+}
+
+func (storage *Storage) EditUser(osuId uint64, discordId uint64, rating uint32, username string, active bool) (models.User, error) {
+	user := models.User{}
+	result := storage.db.First(&user, osuId)
+	if result.Error != nil {
+		return models.User{}, result.Error
+	}
+	user.DiscordId = discordId
+	user.Rating = rating
+	user.Username = username
+	user.Active = active
+	result = storage.db.Save(&user)
+	if result.Error != nil {
+		return models.User{}, result.Error
+	}
+	return user, nil
 }

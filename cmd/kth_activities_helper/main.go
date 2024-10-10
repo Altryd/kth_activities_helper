@@ -8,6 +8,7 @@ import (
 	"kth_activities_helper/internal/database"
 	"kth_activities_helper/internal/http-server/handlers/match"
 	"kth_activities_helper/internal/http-server/handlers/matchType"
+	"kth_activities_helper/internal/http-server/handlers/user"
 	"log/slog"
 	"net/http"
 	"os"
@@ -38,10 +39,17 @@ func main() {
 	router.Use(middleware.URLFormat)
 
 	router.Get("/api/matches", match.GetAll(log, storage))
+	router.Get("/api/matches/{id}", match.GetOne(log, storage))
 	router.Post("/api/match", match.New(log, storage))
+	router.Put("/api/matches/{id}/edit", match.Edit(log, storage))
 
 	router.Get("/api/matchTypes", matchType.GetAll(log, storage))
 	router.Post("/api/matchType", matchType.New(log, storage))
+
+	router.Get("/api/users", user.GetAll(log, storage))
+	router.Get("/api/users/{osuId}", user.GetOne(log, storage))
+	router.Post("/api/user", user.New(log, storage))
+	router.Put("/api/matches/{osuId}/edit", user.EditUser(log, storage))
 
 	srv := http.Server{
 		Addr:              cfg.HTTPServer.Address,
