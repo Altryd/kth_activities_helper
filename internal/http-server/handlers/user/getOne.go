@@ -1,7 +1,7 @@
 package user
 
 import (
-	"github.com/go-chi/chi"
+	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/render"
 	resp "kth_activities_helper/internal/lib/response"
@@ -29,7 +29,6 @@ func GetOne(log *slog.Logger, oneUserSelector OneUserSelector) http.HandlerFunc 
 			slog.String("op", op),
 			slog.String("request_id", middleware.GetReqID(r.Context())),
 		)
-
 		osuId := chi.URLParam(r, "osuId")
 		id, err := strconv.ParseUint(osuId, 10, 64)
 		if err != nil {
