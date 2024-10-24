@@ -29,7 +29,7 @@ type DatabaseConfig struct {
 }
 
 func Load() *Config {
-	configPath := "C:\\Users\\artio\\GolandProjects\\kth_activities_helper\\config\\config.yaml"
+	configPath := "config\\config.yaml"
 	//configPath := os.Getenv("CONFIG_PATH")
 	//if configPath == "" {
 	//	log.Fatal("CONFIG_PATH environment variable not set")
