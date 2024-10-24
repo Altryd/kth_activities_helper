@@ -119,7 +119,16 @@ func (storage *Storage) SelectUsers() ([]models.User, error) {
 
 func (storage *Storage) SelectOneUser(osuId uint64) (models.User, error) {
 	user := models.User{}
-	result := storage.db.First(&user, osuId)
+	result := storage.db.Preload("MatchUserScrim").First(&user, osuId)
+	if result.Error != nil {
+		return models.User{}, result.Error
+	}
+	return user, nil
+}
+
+func (storage *Storage) SelectOneUserByUsername(username string) (models.User, error) {
+	user := models.User{}
+	result := storage.db.Preload("MatchUserScrim").Where(models.User{Username: username}).First(&user)
 	if result.Error != nil {
 		return models.User{}, result.Error
 	}
