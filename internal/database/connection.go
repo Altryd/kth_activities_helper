@@ -81,8 +81,8 @@ func (storage *Storage) SelectOneMatch(id uint64) (models.Matches, error) {
 	return match, nil
 }
 
-func (storage *Storage) CreateMatch(matchId uint64, matchTypeId uint64, matchDate time.Time) (uint64, error) {
-	matchToCreate := models.Matches{Id: matchId, MatchTypeId: matchTypeId, Date: matchDate}
+func (storage *Storage) CreateMatch(osuMatchId uint64, matchTypeId uint64, matchDate time.Time) (uint64, error) {
+	matchToCreate := models.Matches{MatchOsuID: osuMatchId, MatchTypeId: matchTypeId, Date: matchDate}
 	result := storage.db.Create(&matchToCreate)
 	if result.Error != nil {
 		return 0, result.Error
