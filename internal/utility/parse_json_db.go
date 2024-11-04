@@ -103,7 +103,7 @@ func UploadMatchUserScrims(pathToJson string, storage *database.Storage, log *sl
 	}
 	for _, matchUserScrimData := range matchUserScrimDataList {
 		_, _, err := storage.CreateMatchUserScrim(matchUserScrimData.PlayerId, matchUserScrimData.MatchId,
-			matchUserScrimData.Score, matchUserScrimData.IsBlue)
+			matchUserScrimData.Score, matchUserScrimData.IsBlue, matchUserScrimData.RatingChange)
 		if err != nil {
 			log.Error(err.Error())
 		}

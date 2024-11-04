@@ -65,7 +65,7 @@ func (storage *Storage) CreateMatchType(matchTypeName string) (uint64, error) {
 
 func (storage *Storage) SelectMatches() ([]models.Matches, error) {
 	matches := []models.Matches{}
-	result := storage.db.Find(&matches)
+	result := storage.db.Preload("MatchUserScrim").Find(&matches) // TODO: возможно убрать Preload так как потом будет нагружать сервак
 	if result.Error != nil {
 		return nil, result.Error
 	}
@@ -74,7 +74,7 @@ func (storage *Storage) SelectMatches() ([]models.Matches, error) {
 
 func (storage *Storage) SelectOneMatch(id uint64) (models.Matches, error) {
 	match := models.Matches{}
-	result := storage.db.First(&match, id)
+	result := storage.db.Preload("MatchUserScrim").First(&match, id)
 	if result.Error != nil {
 		return models.Matches{}, result.Error
 	}
@@ -168,8 +168,9 @@ func (storage *Storage) SelectMatchUserScrims() ([]models.MatchUserScrim, error)
 	}
 	return matchUserScrims, nil
 }
-func (storage *Storage) CreateMatchUserScrim(playerId uint64, matchId uint64, score uint64, isBlue bool) (uint64, uint64, error) {
-	matchUserScrimToCreate := models.MatchUserScrim{PlayerId: playerId, MatchId: matchId, Score: score, IsBlue: isBlue}
+func (storage *Storage) CreateMatchUserScrim(playerId uint64, matchId uint64, score uint64, isBlue bool, ratingChange float64) (uint64, uint64, error) {
+	matchUserScrimToCreate := models.MatchUserScrim{PlayerId: playerId, MatchId: matchId, Score: score, IsBlue: isBlue,
+		RatingChange: ratingChange}
 	result := storage.db.Create(&matchUserScrimToCreate)
 	if result.Error != nil {
 		return 0, 0, result.Error
