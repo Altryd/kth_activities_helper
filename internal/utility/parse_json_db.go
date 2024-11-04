@@ -69,7 +69,7 @@ func UploadMatches(pathToJson string, storage *database.Storage, log *slog.Logge
 	}
 	// fmt.Print(matchDataList)
 	for _, matchData := range matchDataList {
-		matchId, err := storage.CreateMatch(matchData.Id, matchData.MatchTypeId, matchData.Date)
+		matchId, err := storage.CreateMatch(matchData.MatchOsuID, matchData.MatchTypeId, matchData.Date)
 		// fmt.Println(osuId, err)
 		if err != nil {
 			log.Error(fmt.Sprintf("Error adding match to database with id: %s", matchData.Id))
