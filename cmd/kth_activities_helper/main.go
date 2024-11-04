@@ -60,13 +60,17 @@ func main() {
 			storage.CreateMatchType("weekly")
 		}
 	}
-	err = utility.UploadPlayers("internal/database/golang_players_dump.json", storage)
+	err = utility.UploadPlayers("internal/database/golang_players_dump.json", storage, log)
 	if err != nil {
 		fmt.Printf("Error uploading players: %s, skipping", err)
 	}
-	err = utility.UploadMatches("internal/database/golang_matches_dump.json", storage)
+	err = utility.UploadMatches("internal/database/golang_matches_dump.json", storage, log)
 	if err != nil {
 		fmt.Printf("Error uploading matches: %s, skipping", err)
+	}
+	err = utility.UploadMatchUserScrims("internal/database/golang_match_user_scrim_dump.json", storage, log)
+	if err != nil {
+		fmt.Printf("Error uploading matchUserScrims: %s, skipping", err)
 	}
 	/* TODO: also transfer this code to utils
 	jsonFile, err := os.Open("internal/database/golang_match_user_scrim_dump.json")

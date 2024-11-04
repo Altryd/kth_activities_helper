@@ -160,6 +160,14 @@ func (storage *Storage) EditUser(osuId uint64, discordId uint64, rating uint32, 
 	}
 	return user, nil
 }
+func (storage *Storage) SelectMatchUserScrims() ([]models.MatchUserScrim, error) {
+	matchUserScrims := []models.MatchUserScrim{}
+	result := storage.db.Find(&matchUserScrims)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	return matchUserScrims, nil
+}
 func (storage *Storage) CreateMatchUserScrim(playerId uint64, matchId uint64, score uint64, isBlue bool) (uint64, uint64, error) {
 	matchUserScrimToCreate := models.MatchUserScrim{PlayerId: playerId, MatchId: matchId, Score: score, IsBlue: isBlue}
 	result := storage.db.Create(&matchUserScrimToCreate)

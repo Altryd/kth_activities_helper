@@ -1,7 +1,7 @@
 package match
 
 import (
-	"github.com/go-chi/chi"
+	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/render"
 	resp "kth_activities_helper/internal/lib/response"
@@ -28,8 +28,8 @@ func GetOne(log *slog.Logger, oneMatchSelector OneMatchSelector) http.HandlerFun
 			slog.String("request_id", middleware.GetReqID(r.Context())),
 		)
 
-		marchId := chi.URLParam(r, "id")
-		id, err := strconv.ParseUint(marchId, 10, 64)
+		matchId := chi.URLParam(r, "id")
+		id, err := strconv.ParseUint(matchId, 10, 64)
 		if err != nil {
 			http.Error(w, http.StatusText(400), 400)
 			return
