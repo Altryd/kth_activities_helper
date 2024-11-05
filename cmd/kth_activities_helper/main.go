@@ -72,37 +72,6 @@ func main() {
 	if err != nil {
 		fmt.Printf("Error uploading matchUserScrims: %s, skipping", err)
 	}
-	/* TODO: also transfer this code to utils
-	jsonFile, err := os.Open("internal/database/golang_match_user_scrim_dump.json")
-	if err != nil {
-		panic(err)
-	}
-	defer jsonFile.Close()
-
-	byteValue, _ := io.ReadAll(jsonFile)
-	var matchUserScrimDataList []models.MatchUserScrim
-	err = json.Unmarshal(byteValue, &matchUserScrimDataList)
-	if err != nil {
-		panic(err)
-	}
-	for _, matchUserScrimData := range matchUserScrimDataList {
-		_, _, err := storage.CreateMatchUserScrim(matchUserScrimData.PlayerId, matchUserScrimData.MatchId,
-			matchUserScrimData.Score, matchUserScrimData.IsBlue)
-		if err != nil {
-			log.Error(err.Error())
-		}
-	}
-	*/
-
-	// fmt.Print(matchUserScrimDataList)
-	/*
-		for _, matchUserScrimData := range matchUserScrimDataList {
-			test := models.MatchUserScrim{PlayerId: matchUserScrimData.PlayerId, MatchId: matchUserScrimData.MatchId,
-				Score: matchUserScrimData.Score, IsBlue: matchUserScrimData.IsBlue}
-			fmt.Println(test)
-			// osuId, err := storage.CreateMatch(matchData.Id, matchData.MatchTypeId, matchData.Date)
-			// fmt.Println(osuId, err)
-		} */
 
 	srv := http.Server{
 		Addr:              cfg.HTTPServer.Address,

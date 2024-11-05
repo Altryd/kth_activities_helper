@@ -11,7 +11,7 @@ import (
 
 type GetAllResponse struct {
 	resp.Response
-	Users []models.User `json:"matches,omitempty"`
+	Users []models.User `json:"users,omitempty"`
 }
 
 type UsersSelector interface {
