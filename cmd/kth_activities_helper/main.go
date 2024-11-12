@@ -2,8 +2,10 @@ package main
 
 import (
 	"fmt"
+	"github.com/Altryd/osuParseMpLinks"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/go-chi/cors"
 	"kth_activities_helper/internal/config"
 	"kth_activities_helper/internal/database"
 	"kth_activities_helper/internal/http-server/handlers/match"
@@ -16,6 +18,8 @@ import (
 )
 
 func main() {
+	parsingConfig := osuParseMpLinks.ParsingConfig{Debug: true} // TODO: потом удалить, сейчас это нужно, чтобы зависимость не потерялась
+	print(parsingConfig.Debug)
 	cfg := config.Load()
 	fmt.Println(*cfg)
 
@@ -38,11 +42,22 @@ func main() {
 	router.Use(middleware.RequestID)
 	router.Use(middleware.Recoverer)
 	router.Use(middleware.URLFormat)
+	router.Use(cors.Handler(cors.Options{ // Чтобы с фронта можно POST послать
+		// AllowedOrigins:   []string{"https://foo.com"}, // Use this to allow specific origin hosts
+		AllowedOrigins: []string{"https://*", "http://*"},
+		// AllowOriginFunc:  func(r *http.Request, origin string) bool { return true },
+		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
+		ExposedHeaders:   []string{"Link"},
+		AllowCredentials: false,
+		MaxAge:           300, // Maximum value not ignored by any of major browsers
+	}))
 
 	router.Get("/api/matches", match.GetAll(log, storage))
 	router.Get("/api/matches/{id}", match.GetOne(log, storage))
 	router.Post("/api/match", match.New(log, storage))
 	router.Put("/api/matches/{id}/edit", match.Edit(log, storage))
+	router.Post("/api/parse_scrims", match.ParseMatches(log))
 
 	router.Get("/api/matchTypes", matchType.GetAll(log, storage))
 	router.Post("/api/matchType", matchType.New(log, storage))
