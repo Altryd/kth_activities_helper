@@ -1,6 +1,19 @@
 'use client'
-export default function ParseScrims() {
-    const handleParseClick = () => {
+type ParsedLine = {
+    id: number,
+    match_osu_id: number,
+    match_type_id: number,
+    date: Date,
+    first_player_id: number,
+    first_player_username: string,
+    first_player_score: number,
+    second_player_id: number,
+    second_player_username: string,
+    second_player_score: number
+};
+
+export default  function ParseScrims() {
+    const handleParseClick = async () => {
         let textarea_value = (document.getElementById("ParseLinks") as HTMLInputElement).value;
         const mplinks: { mplink: string; warmups: number; skip_last: number; }[] = [];
         if (textarea_value.length < 1) {
@@ -31,8 +44,8 @@ export default function ParseScrims() {
             mplinks.push({"mplink": mplink, "warmups": warmups, "skip_last": skip_last});
         });
         
-        console.log(mplinks);
-        fetch('http://localhost:8090/api/parse_scrims', {
+        // console.log(mplinks);
+        const response = await fetch('http://localhost:8090/api/parse_scrims', {
             method: 'POST',
             headers: {
               'Accept': 'application/json',
@@ -42,6 +55,11 @@ export default function ParseScrims() {
                 mplinks,
             )
           })
+        const parse_result = await response.json();
+        const parsed_lines = parse_result["parsed_lines"];
+        parsed_lines.map((parsedLine: ParsedLine) => (
+            console.log(parsedLine)
+        ))
         console.log("GOTP ARSING !!");
 
     }

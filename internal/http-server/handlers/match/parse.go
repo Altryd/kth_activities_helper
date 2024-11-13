@@ -1,17 +1,32 @@
 package match
 
 import (
+	"github.com/Altryd/osuParseMpLinks"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/render"
 	resp "kth_activities_helper/internal/lib/response"
 	"kth_activities_helper/internal/models"
 	"log/slog"
 	"net/http"
+	"time"
 )
 
 type ParseResponse struct {
 	resp.Response
-	Matches []models.Matches `json:"matches,omitempty"`
+	ParsedLines []ParsedLine `json:"parsed_lines,omitempty"`
+}
+
+type ParsedLine struct {
+	Id                   uint64    `json:"id"`
+	MatchOsuID           uint64    `json:"match_osu_id"`
+	MatchTypeId          uint64    `json:"match_type_id"`
+	Date                 time.Time `json:"date"`
+	FirstPlayerId        uint64    `json:"first_player_id"`
+	FirstPlayerUsername  string    `json:"first_player_username"`
+	FirstPlayerScore     uint64    `json:"first_player_score"`
+	SecondPlayerId       uint64    `json:"second_player_id"`
+	SecondPlayerUsername string    `json:"second_player_username"`
+	SecondPlayerScore    uint64    `json:"second_player_score"`
 }
 
 type Line struct {
@@ -35,36 +50,52 @@ func ParseMatches(log *slog.Logger) http.HandlerFunc {
 			slog.String("op", op),
 			slog.String("request_id", middleware.GetReqID(r.Context())),
 		)
-		// var req []Line
-		// var test map[string]interface{}
-		// r.Body.Close()
-		// body, err := io.ReadAll(r.Body)
-		// err = json.Unmarshal(body, &test)
-		// panic(err)
+
 		var req []Line
 		err := render.DecodeJSON(r.Body, &req)
 
 		if err != nil {
-			panic(err)
 			localLog.Error("Failed to decode request body")
+			w.WriteHeader(http.StatusBadRequest)
 			render.JSON(w, r, resp.BadRequest("Failed to decode request"))
 			return
 		}
-		//print(req)
-		/*
-			matches, err := matchesParser.ParseMatches()
+		secretData, err := osuParseMpLinks.NewSecretData("internal/config/secrets.json")
+		if err != nil {
+			localLog.Error("Failed to get secret data")
+			w.WriteHeader(http.StatusInternalServerError)
+			render.JSON(w, r, resp.Error("Failed to get to API"))
+			return
+		}
+		client := osuParseMpLinks.HttpClient{SecretDataConfig: secretData,
+			AccessToken: "",
+			Client:      &http.Client{}}
+		client.UpdateToken("internal/config/secrets.json")
+		var result []ParsedLine
+		for _, line := range req {
+			parsingConfig := osuParseMpLinks.ParsingConfig{Warmups: line.Warmups, SkipLast: line.SkipLast,
+				Verbose: false, Debug: false}
+			_, userDictForOutput, additionalInfo, err := client.ParseScrim(line.Mplink, parsingConfig)
 			if err != nil {
-				localLog.Error("Failed to select all matches", slog.String("error", err.Error()))
-				render.JSON(w, r, resp.Error("Failed to select all matches"))
+				localLog.Error("Failed to parse scrim")
+				w.WriteHeader(http.StatusInternalServerError)
+				render.JSON(w, r, resp.Error("Failed to parse scrim"))
+				return
 			}
-
-			localLog.Info("Selected all matches")
-
-			render.JSON(w, r, GetAllResponse{
-				Response: resp.OK(),
-				Matches:  matches,
-			})
-		*/
+			matchID := uint64(additionalInfo["id"].(float64))
+			date, _ := time.Parse("2006-01-02T15:04:05+00:00", additionalInfo["start_time"].(string))
+			parsedLine := ParsedLine{MatchOsuID: matchID, MatchTypeId: 1, Date: date, // TODO изменить потом нормально matchtype
+				FirstPlayerId: userDictForOutput[0].OsuId, FirstPlayerUsername: userDictForOutput[0].Username,
+				FirstPlayerScore: userDictForOutput[0].MapsWon,
+				SecondPlayerId:   userDictForOutput[1].OsuId, SecondPlayerUsername: userDictForOutput[1].Username,
+				SecondPlayerScore: userDictForOutput[1].MapsWon}
+			result = append(result, parsedLine)
+			// print(allScoresList, userDictForOutput)
+		}
+		render.JSON(w, r, ParseResponse{
+			Response:    resp.OK(),
+			ParsedLines: result,
+		})
 		return
 	}
 }

@@ -1,5 +1,11 @@
 github.com/Altryd/osuParseMpLinks v0.0.0-20241112165209-80c21a871b94 h1:B4m9FOW49tBkuDN7AZFd2YVBJU4vmaAe9uqSmazY4LE=
 github.com/Altryd/osuParseMpLinks v0.0.0-20241112165209-80c21a871b94/go.mod h1:6axu/2vvNsIUbAVRj4HfvlsvNPChwYnHuJ4giw6ATGQ=
+github.com/Altryd/osuParseMpLinks v0.0.0-20241113073427-bd6b23e7a9d5 h1:8Cp0GSg583NYFgXjH+Pj4sJdfpDNbZoDeg9w6fyNd4w=
+github.com/Altryd/osuParseMpLinks v0.0.0-20241113073427-bd6b23e7a9d5/go.mod h1:6axu/2vvNsIUbAVRj4HfvlsvNPChwYnHuJ4giw6ATGQ=
+github.com/Altryd/osuParseMpLinks v0.0.0-20241113083900-ef294ca9116b h1:6mMNGUrC1R3IZh6JY0iXy22FkgMa0AJRXxuCxgqgFeg=
+github.com/Altryd/osuParseMpLinks v0.0.0-20241113083900-ef294ca9116b/go.mod h1:6axu/2vvNsIUbAVRj4HfvlsvNPChwYnHuJ4giw6ATGQ=
+github.com/Altryd/osuParseMpLinks v0.0.0-20241113105839-e297e701bcb7 h1:VlV5MfDvZMjRNJz+quPKZGlFLx3ehStvrUTB702c0Ck=
+github.com/Altryd/osuParseMpLinks v0.0.0-20241113105839-e297e701bcb7/go.mod h1:6axu/2vvNsIUbAVRj4HfvlsvNPChwYnHuJ4giw6ATGQ=
 github.com/BurntSushi/toml v1.2.1 h1:9F2/+DoOYIOksmaJFPw1tGFy1eDnIJXg+UHjuD8lTak=
 github.com/BurntSushi/toml v1.2.1/go.mod h1:CxXYINrC8qIiEnFrOxCa7Jy5BFHlXnUU2pbicEuybxQ=
 github.com/ajg/form v1.5.1 h1:t9c7v8JUKu/XxOGBU0yjNpaMloxGEJhUkqFRq0ibGeU=

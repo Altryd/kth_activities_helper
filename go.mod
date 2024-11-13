@@ -3,7 +3,7 @@ module kth_activities_helper
 go 1.23.1
 
 require (
-	github.com/Altryd/osuParseMpLinks v0.0.0-20241112165209-80c21a871b94 // indirect
+	github.com/Altryd/osuParseMpLinks v0.0.0-20241113105839-e297e701bcb7 // indirect
 	github.com/BurntSushi/toml v1.2.1 // indirect
 	github.com/ajg/form v1.5.1 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.3 // indirect
