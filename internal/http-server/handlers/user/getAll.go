@@ -30,6 +30,7 @@ func GetAll(log *slog.Logger, usersSelector UsersSelector) http.HandlerFunc {
 		if err != nil {
 			localLog.Error("Failed to select all users", slog.String("error", err.Error()))
 			render.JSON(w, r, resp.Error("Failed to select all users"))
+			return
 		}
 
 		localLog.Info("Selected all users")

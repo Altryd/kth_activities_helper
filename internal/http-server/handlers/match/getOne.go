@@ -37,8 +37,9 @@ func GetOne(log *slog.Logger, oneMatchSelector OneMatchSelector) http.HandlerFun
 
 		match, err := oneMatchSelector.SelectOneMatch(id)
 		if err != nil {
-			localLog.Error("Failed to select all matches", slog.String("error", err.Error()))
+			localLog.Error("Failed to select match", slog.String("error", err.Error()))
 			render.JSON(w, r, resp.Error("Failed to select match"))
+			return
 		}
 
 		localLog.Info("Selected match", slog.Uint64("match_id", match.Id))

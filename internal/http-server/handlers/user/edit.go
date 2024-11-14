@@ -63,6 +63,7 @@ func EditUser(log *slog.Logger, userEditor UserEditor) http.HandlerFunc {
 		if err != nil {
 			localLog.Error("Failed to edit user", slog.String("error", err.Error()))
 			render.JSON(w, r, resp.Error("Failed to edit user"))
+			return
 		}
 
 		// TODO delete

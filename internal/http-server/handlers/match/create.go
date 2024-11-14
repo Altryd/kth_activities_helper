@@ -53,6 +53,7 @@ func New(log *slog.Logger, matchCreator MatchCreator) http.HandlerFunc {
 		if err != nil {
 			localLog.Error("Failed to create match", slog.String("error", err.Error()))
 			render.JSON(w, r, resp.Error("Failed to create match"))
+			return
 		}
 
 		// TODO delete

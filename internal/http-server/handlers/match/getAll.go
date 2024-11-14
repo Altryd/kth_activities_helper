@@ -30,6 +30,7 @@ func GetAll(log *slog.Logger, matchesSelector MatchesSelector) http.HandlerFunc 
 		if err != nil {
 			localLog.Error("Failed to select all matches", slog.String("error", err.Error()))
 			render.JSON(w, r, resp.Error("Failed to select all matches"))
+			return
 		}
 
 		localLog.Info("Selected all matches")

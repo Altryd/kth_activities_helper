@@ -63,6 +63,7 @@ func Edit(log *slog.Logger, matchEditor MatchEditor) http.HandlerFunc {
 		if err != nil {
 			localLog.Error("Failed to edit match", slog.String("error", err.Error()))
 			render.JSON(w, r, resp.Error("Failed to edit match"))
+			return
 		}
 
 		// TODO delete

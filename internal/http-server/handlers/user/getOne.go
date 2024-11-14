@@ -40,6 +40,7 @@ func GetOne(log *slog.Logger, oneUserSelector OneUserSelector) http.HandlerFunc 
 		if err != nil {
 			localLog.Error("Failed to select user", slog.String("error", err.Error()))
 			render.JSON(w, r, resp.Error("Failed to select user"))
+			return
 		}
 
 		localLog.Info("Selected user", slog.Uint64("user_id", user.OsuId))

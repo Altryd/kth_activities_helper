@@ -65,6 +65,9 @@ func (storage *Storage) CreateMatchType(matchTypeName string) (uint64, error) {
 
 func (storage *Storage) SelectMatches() ([]models.Matches, error) {
 	matches := []models.Matches{}
+	//result := storage.db.Preload("MatchUserScrim", func(db *gorm.DB) *gorm.DB {
+	//	return db.Joins("JOIN users on match_user_scrims.player_id = users.osu_id").Select("match_user_scrims.*, users.osu_id")
+	//}).Find(&matches)
 	result := storage.db.Preload("MatchUserScrim").Find(&matches) // TODO: возможно убрать Preload так как потом будет нагружать сервак
 	if result.Error != nil {
 		return nil, result.Error

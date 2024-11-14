@@ -50,6 +50,7 @@ func New(log *slog.Logger, matchTypeCreator MatchTypeCreator) http.HandlerFunc {
 		if err != nil {
 			localLog.Error("Failed to create match type", slog.String("error", err.Error()))
 			render.JSON(w, r, resp.Error("Failed to create match type"))
+			return
 		}
 
 		// TODO delete
