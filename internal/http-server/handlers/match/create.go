@@ -12,7 +12,7 @@ import (
 
 type Request struct {
 	Id     uint64    `json:"id" validate:"required,gte=0"`
-	TypeId uint64    `json:"type_id" validate:"required,gte=0"`
+	TypeId uint64    `json:"match_type_id" validate:"required,gte=0"`
 	Date   time.Time `json:"date" validate:"required,datetime"`
 }
 
@@ -45,6 +45,7 @@ func New(log *slog.Logger, matchCreator MatchCreator) http.HandlerFunc {
 		if err := validator.New().Struct(req); err != nil {
 			validateErr := err.(validator.ValidationErrors)
 			localLog.Error("Failed to validate request")
+			w.WriteHeader(http.StatusBadRequest)
 			render.JSON(w, r, resp.ValidationError(validateErr))
 			return
 		}

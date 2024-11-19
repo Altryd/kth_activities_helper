@@ -72,7 +72,7 @@ func ParseMatches(log *slog.Logger) http.HandlerFunc {
 			Client:      &http.Client{}}
 		client.UpdateToken("internal/config/secrets.json")
 		var result []ParsedLine
-		for _, line := range req {
+		for number, line := range req {
 			parsingConfig := osuParseMpLinks.ParsingConfig{Warmups: line.Warmups, SkipLast: line.SkipLast,
 				Verbose: false, Debug: false}
 			_, userDictForOutput, additionalInfo, err := client.ParseScrim(line.Mplink, parsingConfig)
@@ -84,7 +84,7 @@ func ParseMatches(log *slog.Logger) http.HandlerFunc {
 			}
 			matchID := uint64(additionalInfo["id"].(float64))
 			date, _ := time.Parse("2006-01-02T15:04:05+00:00", additionalInfo["start_time"].(string))
-			parsedLine := ParsedLine{MatchOsuID: matchID, MatchTypeId: 1, Date: date, // TODO изменить потом нормально matchtype
+			parsedLine := ParsedLine{Id: uint64(number), MatchOsuID: matchID, MatchTypeId: 1, Date: date, // TODO изменить потом нормально matchtype
 				FirstPlayerId: userDictForOutput[0].OsuId, FirstPlayerUsername: userDictForOutput[0].Username,
 				FirstPlayerScore: userDictForOutput[0].MapsWon,
 				SecondPlayerId:   userDictForOutput[1].OsuId, SecondPlayerUsername: userDictForOutput[1].Username,

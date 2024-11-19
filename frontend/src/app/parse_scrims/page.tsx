@@ -1,5 +1,9 @@
 'use client'
-type ParsedLine = {
+import { useState } from "react";
+import ReactDOM from "react-dom";
+import ParsedElems from "./parsedElemes";
+
+export type ParsedLine = {
     id: number,
     match_osu_id: number,
     match_type_id: number,
@@ -9,10 +13,26 @@ type ParsedLine = {
     first_player_score: number,
     second_player_id: number,
     second_player_username: string,
-    second_player_score: number
+    second_player_score: number,
 };
 
-export default  function ParseScrims() {
+
+export default function ParseScrims() {
+    let [parsedLines, setParsedLines] = useState([]);
+    const SendToDB = async (parsedLine: ParsedLine) => {
+        console.log("parsed line: ", parsedLine);
+        const response = await fetch('http://localhost:8090/api/match', {
+            method: 'POST',
+            headers: {
+              'Accept': 'application/json',
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(
+                parsedLine,
+            )
+          })
+    };
+
     const handleParseClick = async () => {
         let textarea_value = (document.getElementById("ParseLinks") as HTMLInputElement).value;
         const mplinks: { mplink: string; warmups: number; skip_last: number; }[] = [];
@@ -43,8 +63,7 @@ export default  function ParseScrims() {
             }
             mplinks.push({"mplink": mplink, "warmups": warmups, "skip_last": skip_last});
         });
-        
-        // console.log(mplinks);
+    
         const response = await fetch('http://localhost:8090/api/parse_scrims', {
             method: 'POST',
             headers: {
@@ -57,17 +76,40 @@ export default  function ParseScrims() {
           })
         const parse_result = await response.json();
         const parsed_lines = parse_result["parsed_lines"];
-        parsed_lines.map((parsedLine: ParsedLine) => (
-            console.log(parsedLine)
-        ))
-        console.log("GOTP ARSING !!");
+        let string_to_show = "";
+        let result = document.getElementById("result");
+        if (result === null) return;
+        result.innerHTML = "";
+        setParsedLines(parsed_lines);
+        console.log(parsedLines);
 
     }
-    return <div><h1>Здесь вы можете отправить матчи на проверку:</h1>
+
+
+    let firstPlayerWon = "_first_player_won";
+    let secondPlayerWon = "_second_player_won";
+    return (<div><h1>Здесь вы можете отправить матчи на проверку:</h1>
     Синтаксис отправки (через запятую): ссылка,количество разминочных карт,количество карт с конца которые нужно пропустить
     Пример:https://osu.ppy.sh/community/matches/111534249/,2,3
     <br></br>
     <textarea id="ParseLinks" style={{width: "500px", height:"500px"}}></textarea>
-    <button onClick={handleParseClick}>SUBMIT</button>
-    </div>;
+    <button onClick={handleParseClick}>SUBMIT</button><p id="adding_to_db_result">
+
+    </p>
+    <p id="result" style={{display: "none"}}>
+    </p>
+        <div className="grid grid-cols-4 gap-4 p-4">
+            {parsedLines.map((line: ParsedLine) => (
+                <div key={line.id} className="flex items-center justify-between p-4 bg-white shadow rounded-lg">
+                    <b>{line.first_player_username}
+                    <input id={line.id + firstPlayerWon} type="number" min="0" max="50" defaultValue={line.first_player_score}/></b>
+                    -
+                    <input id={line.id + secondPlayerWon} type="number" min="0" max="50" defaultValue={line.second_player_score}/>
+                    {line.second_player_username}
+                    <button className="btn btn-outline-primary" onClick={() => SendToDB(line)}>SEND TO DATABASE</button>
+                </div>
+            ))}
+        </div>
+    </div>
+    );
 }

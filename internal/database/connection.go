@@ -190,7 +190,7 @@ func (storage *Storage) EditUser(osuId uint64, discordId uint64, rating uint32, 
 }
 func (storage *Storage) SelectMatchUserScrims() ([]models.MatchUserScrim, error) {
 	matchUserScrims := []models.MatchUserScrim{}
-	result := storage.db.Find(&matchUserScrims)
+	result := storage.db.Preload("Player").Preload("Match").Find(&matchUserScrims)
 	if result.Error != nil {
 		return nil, result.Error
 	}
