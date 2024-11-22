@@ -21,7 +21,7 @@ export default function ParseScrims() {
     let [parsedLines, setParsedLines] = useState([]);
     const SendToDB = async (parsedLine: ParsedLine) => {
         console.log("parsed line: ", parsedLine);
-        const response = await fetch('http://localhost:8090/api/match', {
+        const response = fetch('http://localhost:8090/api/match', {
             method: 'POST',
             headers: {
               'Accept': 'application/json',
@@ -31,6 +31,39 @@ export default function ParseScrims() {
                 parsedLine,
             )
           })
+        response.then((resp) => {
+            let response_json = resp.json()
+            .then((response_json) => {
+                console.log("resp_json ==", response_json);
+                var to_send = {
+                    "player_id": parsedLine.first_player_id,
+                    "match_id": response_json.match_id,
+                    "score": parsedLine.first_player_score,
+                    "is_blue": true
+                }
+                const responseCreateMatchLinkFirst = fetch('http://localhost:8090/api/match_user', {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json',
+                      },
+                      body: JSON.stringify(
+                        to_send
+                      )
+                });
+            })
+            .then((test) => {
+                console.log(test);
+            })
+            .catch()
+        })
+        response.then((resp) => {
+            
+            
+        })
+        .catch((err) => {
+            console.log("error happended", err);
+        })
     };
 
     const handleParseClick = async () => {

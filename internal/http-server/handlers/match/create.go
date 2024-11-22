@@ -11,9 +11,9 @@ import (
 )
 
 type Request struct {
-	Id     uint64    `json:"id" validate:"required,gte=0"`
-	TypeId uint64    `json:"match_type_id" validate:"required,gte=0"`
-	Date   time.Time `json:"date" validate:"required,datetime"`
+	MatchOsuID uint64    `json:"match_osu_id" validate:"required,gte=0"`
+	TypeId     uint64    `json:"match_type_id" validate:"required,gte=0"`
+	Date       time.Time `json:"date" validate:"required,datetime"`
 }
 
 type CreateResponse struct {
@@ -41,16 +41,15 @@ func New(log *slog.Logger, matchCreator MatchCreator) http.HandlerFunc {
 			render.JSON(w, r, resp.BadRequest("Failed to decode request"))
 			return
 		}
-
-		if err := validator.New().Struct(req); err != nil {
+		/*if err := validator.New().Struct(req); err != nil {
 			validateErr := err.(validator.ValidationErrors)
 			localLog.Error("Failed to validate request")
 			w.WriteHeader(http.StatusBadRequest)
 			render.JSON(w, r, resp.ValidationError(validateErr))
 			return
-		}
+		} */
 
-		id, err := matchCreator.CreateMatch(req.Id, req.TypeId, req.Date)
+		id, err := matchCreator.CreateMatch(req.MatchOsuID, req.TypeId, req.Date)
 		if err != nil {
 			localLog.Error("Failed to create match", slog.String("error", err.Error()))
 			render.JSON(w, r, resp.Error("Failed to create match"))

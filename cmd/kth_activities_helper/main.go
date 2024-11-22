@@ -10,6 +10,7 @@ import (
 	"kth_activities_helper/internal/database"
 	"kth_activities_helper/internal/http-server/handlers/match"
 	"kth_activities_helper/internal/http-server/handlers/matchType"
+	matchUser "kth_activities_helper/internal/http-server/handlers/matchUserScrim"
 	"kth_activities_helper/internal/http-server/handlers/user"
 	"kth_activities_helper/internal/utility"
 	"log/slog"
@@ -66,6 +67,8 @@ func main() {
 	router.Get("/api/users/{osuId}", user.GetOne(log, storage))
 	router.Post("/api/user", user.New(log, storage))
 	router.Put("/api/matches/{osuId}/edit", user.EditUser(log, storage))
+
+	router.Post("/api/match_user", matchUser.New(log, storage))
 	matchTypes, err := storage.SelectMatchTypes()
 	if err != nil {
 		fmt.Printf("Error selecting match types: %v\n", err)
