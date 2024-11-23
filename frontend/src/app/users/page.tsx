@@ -10,7 +10,7 @@ type User = {
 };
 
 export default async function UsersPage() {
-    const response = await fetch("http://localhost:8090/api/users");
+    const response = await fetch("http://localhost:8089/api/users");
     const users = await response.json();
     const users_data = users['users'];
     console.log(users_data);
