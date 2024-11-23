@@ -21,7 +21,7 @@ export default function ParseScrims() {
     let [parsedLines, setParsedLines] = useState([]);
     const SendToDB = async (parsedLine: ParsedLine) => {
         console.log("parsed line: ", parsedLine);
-        const response = fetch('http://localhost:8090/api/match', {
+        const response = fetch('http://localhost:8089/api/match', {
             method: 'POST',
             headers: {
               'Accept': 'application/json',
@@ -41,7 +41,7 @@ export default function ParseScrims() {
                     "score": parsedLine.first_player_score,
                     "is_blue": true
                 }
-                const responseCreateMatchLinkFirst = fetch('http://localhost:8090/api/match_user', {
+                const responseCreateMatchLinkFirst = fetch('http://localhost:8089/api/match_user', {
                     method: 'POST',
                     headers: {
                         'Accept': 'application/json',
@@ -97,7 +97,7 @@ export default function ParseScrims() {
             mplinks.push({"mplink": mplink, "warmups": warmups, "skip_last": skip_last});
         });
     
-        const response = await fetch('http://localhost:8090/api/parse_scrims', {
+        const response = await fetch('http://localhost:8089/api/parse_scrims', {
             method: 'POST',
             headers: {
               'Accept': 'application/json',

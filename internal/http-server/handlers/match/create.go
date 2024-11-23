@@ -3,7 +3,6 @@ package match
 import (
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/render"
-	"github.com/go-playground/validator/v10"
 	resp "kth_activities_helper/internal/lib/response"
 	"log/slog"
 	"net/http"
