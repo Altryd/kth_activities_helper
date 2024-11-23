@@ -2,13 +2,16 @@ package database
 
 import (
 	"fmt"
-	"gorm.io/driver/postgres"
-	"gorm.io/gorm"
 	"kth_activities_helper/internal/config"
 	"kth_activities_helper/internal/models"
 	"log/slog"
+	"net/http"
 	"strconv"
+	"strings"
 	"time"
+
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
 )
 
 type Storage struct {
@@ -204,4 +207,166 @@ func (storage *Storage) CreateMatchUserScrim(playerId uint64, matchId uint64, sc
 		return 0, 0, result.Error
 	}
 	return matchUserScrimToCreate.PlayerId, matchUserScrimToCreate.MatchId, nil
+}
+
+// ______________________________________________
+type Player struct {
+	Nickname  string
+	OsuID     uint64
+	Rating    int
+	Active    bool
+	Matches   []Match
+	DiscordID string
+}
+
+type Match struct {
+	FirstPlayerID  uint64
+	SecondPlayerID uint64
+}
+
+type Response struct {
+	PairsNickname []string   `json:"pairs_nickname"`
+	PairsDiscord  []string   `json:"pairs_discord"`
+	Unused        []string   `json:"unused"`
+	PairsRow      []string   `json:"pairs_row"`
+	CreatedPairs  [][]string `json:"created_pairs,omitempty"` // Add this field for created pairs
+
+}
+
+func (storage *Storage) CreatePairs(r *http.Request) (Response, int, error) {
+	var response Response
+	usedPlayers := make(map[string]struct{})
+	pairs := []struct {
+		FirstPlayer  models.User
+		SecondPlayer models.User
+	}{}
+
+	var pairsCorrectionList []string
+	// Uncomment if you need to decode pairsCorrectionList from the request body
+	/*
+		if err := json.NewDecoder(r.Body).Decode(&pairsCorrectionList); err != nil {
+			return response, http.StatusBadRequest, fmt.Errorf("failed to decode request body: %v", err)
+		}
+	*/
+
+	var players []models.User
+	if err := storage.db.Where("active = ?", true).Order("rating DESC").Find(&players).Error; err != nil {
+		return response, http.StatusInternalServerError, err
+	}
+
+	if len(pairsCorrectionList) > 0 {
+		for _, pair := range pairsCorrectionList {
+			playerNames := strings.Split(pair, ",")
+			if len(playerNames) < 2 {
+				continue
+			}
+			firstPlayerName := strings.TrimSpace(playerNames[0])
+			secondPlayerName := strings.TrimSpace(playerNames[1])
+
+			firstPlayer, err := storage.SelectOneUserByUsername(firstPlayerName)
+			if err != nil {
+				return response, http.StatusNotFound, fmt.Errorf("the player with nickname %s is not found", firstPlayerName)
+			}
+			secondPlayer, err := storage.SelectOneUserByUsername(secondPlayerName)
+			if err != nil {
+				return response, http.StatusNotFound, fmt.Errorf("the player with nickname %s is not found", secondPlayerName)
+			}
+
+			usedPlayers[firstPlayer.Username] = struct{}{}
+			usedPlayers[secondPlayer.Username] = struct{}{}
+			pairs = append(pairs, struct {
+				FirstPlayer  models.User
+				SecondPlayer models.User
+			}{FirstPlayer: firstPlayer, SecondPlayer: secondPlayer})
+		}
+	}
+
+	allPlayersSet := make(map[string]struct{})
+	for _, player := range players {
+		allPlayersSet[player.Username] = struct{}{}
+	}
+
+	unused := []string{}
+	oneYearAgo := time.Now().AddDate(-1, 0, 0)
+
+	for i := 0; i < len(players); i++ {
+		player := players[i]
+
+		if _, used := usedPlayers[player.Username]; used {
+			continue
+		}
+
+		for j := i + 1; j < len(players); j++ {
+			opponent := players[j]
+
+			if opponent.OsuId == player.OsuId {
+				continue
+			}
+
+			if _, used := usedPlayers[opponent.Username]; used {
+				continue
+			}
+
+			matches := []models.MatchUserScrim{}
+			if err := storage.db.Where("match_id IN (SELECT id FROM matches WHERE match_osu_id IN (SELECT match_osu_id FROM match_user_scrims WHERE player_id = ?) AND date >= ?)", player.OsuId, oneYearAgo).Find(&matches).Error; err != nil {
+				return response, http.StatusInternalServerError, err
+			}
+
+			skipMatchCheck := false
+			for _, match := range matches {
+				if match.PlayerId == opponent.OsuId {
+					skipMatchCheck = true
+					break
+				}
+			}
+
+			if skipMatchCheck {
+				continue
+			}
+
+			if player.Rating-opponent.Rating > 300 {
+				unused = append(unused,
+					fmt.Sprintf("Cannot find a decent opponent for: %s (rating %d)", player.Username, player.Rating))
+				usedPlayers[player.Username] = struct{}{}
+				break
+			}
+
+			pairs = append(pairs, struct {
+				FirstPlayer  models.User
+				SecondPlayer models.User
+			}{FirstPlayer: player, SecondPlayer: opponent})
+
+			usedPlayers[player.Username] = struct{}{}
+			usedPlayers[opponent.Username] = struct{}{}
+			break
+		}
+	}
+
+	unusedList := make([]string, 0)
+	for unusedPlayer := range allPlayersSet {
+		if _, used := usedPlayers[unusedPlayer]; !used {
+			unusedList = append(unusedList,
+				fmt.Sprintf("Unused player: %s", unusedPlayer))
+		}
+	}
+
+	response.Unused = unused
+
+	for _, pair := range pairs {
+		response.PairsNickname = append(response.PairsNickname,
+			fmt.Sprintf("%s (%d) vs %s (%d)", pair.FirstPlayer.Username, pair.FirstPlayer.Rating, pair.SecondPlayer.Username, pair.SecondPlayer.Rating))
+
+		response.PairsDiscord = append(response.PairsDiscord,
+			fmt.Sprintf("<@%d> vs <@%d>", pair.FirstPlayer.DiscordId, pair.SecondPlayer.DiscordId))
+
+		response.PairsRow = append(response.PairsRow,
+			fmt.Sprintf("%s,%s", pair.FirstPlayer.Username, pair.SecondPlayer.Username))
+
+		response.CreatedPairs = append(response.CreatedPairs, []string{
+			pair.FirstPlayer.Username,
+			pair.SecondPlayer.Username,
+		})
+	}
+
+	return response, http.StatusOK, nil
 }

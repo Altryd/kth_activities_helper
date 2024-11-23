@@ -2,10 +2,6 @@ package main
 
 import (
 	"fmt"
-	"github.com/Altryd/osuParseMpLinks"
-	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/chi/v5/middleware"
-	"github.com/go-chi/cors"
 	"kth_activities_helper/internal/config"
 	"kth_activities_helper/internal/database"
 	"kth_activities_helper/internal/http-server/handlers/match"
@@ -15,6 +11,11 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+
+	"github.com/Altryd/osuParseMpLinks"
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
+	"github.com/go-chi/cors"
 )
 
 func main() {
@@ -58,6 +59,8 @@ func main() {
 	router.Post("/api/match", match.New(log, storage))
 	router.Put("/api/matches/{id}/edit", match.Edit(log, storage))
 	router.Post("/api/parse_scrims", match.ParseMatches(log))
+
+	router.Get("/api/create_pairs", match.CreatePairs(log, storage, storage))
 
 	router.Get("/api/matchTypes", matchType.GetAll(log, storage))
 	router.Post("/api/matchType", matchType.New(log, storage))
