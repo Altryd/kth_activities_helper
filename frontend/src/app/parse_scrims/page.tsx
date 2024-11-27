@@ -1,7 +1,6 @@
 'use client'
 import { useState } from "react";
 import ReactDOM from "react-dom";
-import ParsedElems from "./parsedElemes";
 
 export type ParsedLine = {
     id: number,
