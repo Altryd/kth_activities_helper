@@ -71,6 +71,7 @@ func main() {
 	router.Post("/api/user", user.New(log, storage))
 	router.Put("/api/matches/{osuId}/edit", user.EditUser(log, storage))
 	router.Get("/api/discord", user.GetDiscordCode(log))
+	router.Get("/api/oauth/osu", user.GetOsuCode(log))
 
 	router.Post("/api/match_user", matchUser.New(log, storage))
 	matchTypes, err := storage.SelectMatchTypes()
