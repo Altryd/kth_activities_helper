@@ -288,7 +288,6 @@ func (storage *Storage) CreatePairs(r *http.Request) (Response, int, error) {
 
 	unused := []string{}
 	oneYearAgo := time.Now().AddDate(-1, 0, 0)
-
 	for i := 0; i < len(players); i++ {
 		player := players[i]
 
@@ -307,8 +306,15 @@ func (storage *Storage) CreatePairs(r *http.Request) (Response, int, error) {
 				continue
 			}
 
+			if player.Rating-opponent.Rating > 300 {
+				unused = append(unused,
+					fmt.Sprintf("Cannot find a decent opponent for: %s (rating %d)", player.Username, player.Rating))
+				usedPlayers[player.Username] = struct{}{}
+				break
+			}
+
 			matches := []models.MatchUserScrim{}
-			if err := storage.db.Where("match_id IN (SELECT id FROM matches WHERE match_osu_id IN (SELECT match_osu_id FROM match_user_scrims WHERE player_id = ?) AND date >= ?)", player.OsuId, oneYearAgo).Find(&matches).Error; err != nil {
+			if err := storage.db.Where("match_id IN (SELECT id FROM matches WHERE match_osu_id IN (SELECT match_osu_id FROM match_user_scrims WHERE player_id = ?) AND date < ?)", player.OsuId, oneYearAgo.Format("2006-01-02 15:04:05")).Find(&matches).Error; err != nil {
 				return response, http.StatusInternalServerError, err
 			}
 
@@ -322,13 +328,6 @@ func (storage *Storage) CreatePairs(r *http.Request) (Response, int, error) {
 
 			if skipMatchCheck {
 				continue
-			}
-
-			if player.Rating-opponent.Rating > 300 {
-				unused = append(unused,
-					fmt.Sprintf("Cannot find a decent opponent for: %s (rating %d)", player.Username, player.Rating))
-				usedPlayers[player.Username] = struct{}{}
-				break
 			}
 
 			pairs = append(pairs, struct {
