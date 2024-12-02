@@ -1,7 +1,6 @@
 'use client'
 import { useState } from "react";
 import ReactDOM from "react-dom";
-import ParsedElems from "./parsedElemes";
 
 export type ParsedLine = {
     id: number,
@@ -51,6 +50,33 @@ export default function ParseScrims() {
                         to_send
                       )
                 });
+                responseCreateMatchLinkFirst.then((resp) => {
+                    var to_send_second = {
+                        "player_id": parsedLine.second_player_id,
+                        "match_id": response_json.match_id,
+                        "score": parsedLine.second_player_score,
+                        "is_blue": false
+                    }
+                    const responseCreateMatchLinkSecond = fetch('http://localhost:8089/api/match_user', {
+                        method: 'POST',
+                        headers: {
+                            'Accept': 'application/json',
+                            'Content-Type': 'application/json',
+                          },
+                          body: JSON.stringify(
+                            to_send_second
+                          )
+                    });
+                    responseCreateMatchLinkSecond.then((resp) =>
+                    {
+                        console.log("ALL GREAT!!")
+                        let lastRes = document.getElementById("lastRes");
+                        if (lastRes != null) {
+                            lastRes.innerHTML = "Отправил в базу данных матч с id=" + parsedLine.match_osu_id;
+                        }
+                        
+                    })
+                })
             })
             .then((test) => {
                 console.log(test);
@@ -67,6 +93,7 @@ export default function ParseScrims() {
     };
 
     const handleParseClick = async () => {
+        setParsedLines([]);
         let textarea_value = (document.getElementById("ParseLinks") as HTMLInputElement).value;
         const mplinks: { mplink: string; warmups: number; skip_last: number; }[] = [];
         if (textarea_value.length < 1) {
@@ -118,6 +145,17 @@ export default function ParseScrims() {
 
     }
 
+    const handleFirstPlayerScore =(value: string, line: ParsedLine) => {
+        console.log("changed first score player line")
+        line.first_player_score = parseInt(value);
+        setParsedLines(parsedLines);
+        console.log(parsedLines);
+        console.log(line);
+    }
+    const handleSecondPlayerScore =(value: string, line: ParsedLine) => {
+        line.second_player_score = parseInt(value);
+        setParsedLines(parsedLines);
+    }
 
     let firstPlayerWon = "_first_player_won";
     let secondPlayerWon = "_second_player_won";
@@ -126,18 +164,20 @@ export default function ParseScrims() {
     Пример:https://osu.ppy.sh/community/matches/111534249/,2,3
     <br></br>
     <textarea id="ParseLinks" style={{width: "500px", height:"500px"}}></textarea>
-    <button onClick={handleParseClick}>SUBMIT</button><p id="adding_to_db_result">
-
+    <button onClick={handleParseClick}>SUBMIT</button>
+    <p id="lastRes">
     </p>
     <p id="result" style={{display: "none"}}>
-    </p>
+    </p>  {/* key={secondPlayerWon + line.second_player_score} */ }
         <div className="grid grid-cols-4 gap-4 p-4">
             {parsedLines.map((line: ParsedLine) => (
                 <div key={line.id} className="flex items-center justify-between p-4 bg-white shadow rounded-lg">
                     <b>{line.first_player_username}
-                    <input id={line.id + firstPlayerWon} type="number" min="0" max="50" defaultValue={line.first_player_score}/></b>
+                    <input id={line.id + firstPlayerWon} type="number" min="0" max="50" defaultValue={line.first_player_score} 
+                    onChange={e => handleFirstPlayerScore(e.target.value, line)}/></b>
                     -
-                    <input id={line.id + secondPlayerWon} type="number" min="0" max="50" defaultValue={line.second_player_score}/>
+                    <input id={line.id + secondPlayerWon} type="number" min="0" max="50" defaultValue={line.second_player_score}
+                     onChange={e => handleSecondPlayerScore(e.target.value, line)}/>  
                     {line.second_player_username}
                     <button className="btn btn-outline-primary" onClick={() => SendToDB(line)}>SEND TO DATABASE</button>
                 </div>

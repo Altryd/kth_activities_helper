@@ -69,34 +69,8 @@ func (storage *Storage) CreateMatchType(matchTypeName string) (uint64, error) {
 
 func (storage *Storage) SelectMatches() ([]models.Matches, error) {
 	matches := []models.Matches{}
-	var res []struct {
-		PlayerId     uint64
-		MatchId      uint64
-		Score        uint64
-		IsBlue       bool
-		RatingChange float64
-		OsuId        uint64
-		DiscordId    uint64
-		Rating       uint32
-		Username     string
-		Active       bool
-		Id           uint64
-		MatchOsuID   uint64
-		MatchTypeId  uint64
-		Date         time.Time
-		IsApproved   bool
-	}
-	storage.db.Table("match_user_scrims").
-		Select("match_user_scrims.* as scrim, users.* as user, matches.* as match").
-		Joins("JOIN users on match_user_scrims.player_id = users.osu_id").
-		Joins("JOIN matches on matches.id = match_user_scrims.match_id").
-		Scan(&res)
-	fmt.Println(res)
-	//storage.db.Preload("MatchUserScrim", func(db *gorm.DB) *gorm.DB {
-	//	return db.Joins("JOIN users on match_user_scrims.player_id = users.osu_id").Select("match_user_scrims.*, users.osu_id")
-	//}).Find(&res)
 
-	result := storage.db.Preload("MatchUserScrim").Find(&matches) // TODO: возможно убрать Preload так как потом будет нагружать сервак
+	result := storage.db.Preload("MatchUserScrim.Player").Find(&matches) // TODO: возможно убрать Preload так как потом будет нагружать сервак
 	if result.Error != nil {
 		return nil, result.Error
 	}
