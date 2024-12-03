@@ -59,6 +59,7 @@ func main() {
 	router.Get("/api/matches/{id}", match.GetOne(log, storage))
 	router.Post("/api/match", match.New(log, storage))
 	router.Put("/api/matches/{id}/edit", match.Edit(log, storage))
+	router.Post("/api/matches/{id}/approve", match.Approve(log, storage))
 	router.Post("/api/parse_scrims", match.ParseMatches(log))
 
 	router.Get("/api/create_pairs", match.CreatePairs(log, storage, storage))

@@ -1,4 +1,6 @@
 import 'tailwindcss/tailwind.css'
+import clsx from 'clsx';
+import CheckButton from './check_button';
 
 type playerStruct =  {
 	OsuId:     number,
@@ -16,7 +18,7 @@ type scrimStruct = {
 	RatingChange: number,
 }
 
-type matchStruct = {
+export type matchStruct = {
 	Id:     number,
 	MatchOsuID:     number,
 	MatchTypeId:    number,
@@ -31,15 +33,24 @@ export default async function UsersPage() {
     const matches_data = resp_json['matches'];
     // console.log(matches_data);
     return (
-        <div className="grid grid-cols-1 gap-4 p-4">
+        <div className="grid grid-cols-3 gap-4 p-4">
             {matches_data.map((matchstruct: matchStruct) => {
                 let date_ = new Date(matchstruct.Date);
+                
                 // console.log(date_);
-                return <div key={matchstruct.Id} className="flex items-center justify-between p-4 bg-white shadow rounded-lg">
+                return <div className={clsx(
+                    'flex items-center justify-between p-4 shadow rounded-lg',
+                    {
+                    'bg-gray-100': !matchstruct.IsApproved,
+                    'bg-green-100': matchstruct.IsApproved,
+                },
+                )} key={matchstruct.Id}>
                 <div>
                     {date_.getDay()}.{date_.getMonth()}.{date_.getFullYear()} {" | "}
                     {matchstruct.MatchUserScrim[0].Player.Username} {matchstruct.MatchUserScrim[0].Score} {" - "}  
-                    {matchstruct.MatchUserScrim[1].Score} {matchstruct.MatchUserScrim[1].Player.Username} <i><a style={{color: "blue"}} href={"https://osu.ppy.sh/community/matches/" + matchstruct.MatchOsuID}>Ссылка</a></i>
+                    {matchstruct.MatchUserScrim[1].Score} {matchstruct.MatchUserScrim[1].Player.Username} <a style={{color: "blue"}} href={"https://osu.ppy.sh/community/matches/" + matchstruct.MatchOsuID}>🌐</a> 
+                    <CheckButton matchStruct={matchstruct} text='✓'></CheckButton><button style={{color: "gray"}}>✏️</button><CheckButton matchStruct={matchstruct} text='❌'></CheckButton>
+                    
                 </div>
             </div>
             })}

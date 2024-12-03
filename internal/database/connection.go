@@ -1,7 +1,9 @@
 package database
 
 import (
+	"errors"
 	"fmt"
+	"kth_activities_helper/internal/calculation"
 	"kth_activities_helper/internal/config"
 	"kth_activities_helper/internal/models"
 	"log/slog"
@@ -107,6 +109,67 @@ func (storage *Storage) EditMatch(matchId uint64, matchTypeId uint64, matchDate 
 	result = storage.db.Save(&match)
 	if result.Error != nil {
 		return models.Matches{}, result.Error
+	}
+	return match, nil
+}
+
+func (storage *Storage) ApproveMatch(matchId uint64) (models.Matches, error) {
+	match := models.Matches{}
+	result := storage.db.Preload("MatchUserScrim").Preload("MatchType").First(&match, matchId)
+	if result.Error != nil {
+		return models.Matches{}, result.Error
+	}
+	if match.IsApproved {
+		return match, errors.New("match already approved")
+	}
+	if match.MatchType.Name != "scrim" {
+		return match, nil // TODO: do match cost someday
+	}
+	var matchUsersScrims []models.MatchUserScrim
+	test := storage.db.Preload("Player").Where(models.MatchUserScrim{MatchId: match.Id}).Find(&matchUsersScrims)
+	if test.Error != nil {
+		return match, test.Error
+	}
+	if len(matchUsersScrims) != 2 {
+		return match, errors.New("match does not have two users scrims")
+	}
+	firstPlayerNewRating := calculation.GetNewRating(float64(matchUsersScrims[0].Player.Rating),
+		float64(matchUsersScrims[1].Player.Rating),
+		int(matchUsersScrims[0].Score),
+		int(matchUsersScrims[1].Score))
+	secondPlayerNewRating := calculation.GetNewRating(float64(matchUsersScrims[1].Player.Rating),
+		float64(matchUsersScrims[0].Player.Rating),
+		int(matchUsersScrims[1].Score),
+		int(matchUsersScrims[0].Score))
+	firstPlayerRatingChange := firstPlayerNewRating - float64(matchUsersScrims[0].Player.Rating)
+	secondPlayerRatingChange := secondPlayerNewRating - float64(matchUsersScrims[1].Player.Rating)
+
+	matchUsersScrims[0].RatingChange = firstPlayerRatingChange
+	matchUsersScrims[1].RatingChange = secondPlayerRatingChange
+	matchUsersScrims[0].Player.Rating = uint32(firstPlayerNewRating)
+	matchUsersScrims[1].Player.Rating = uint32(secondPlayerNewRating)
+	match.IsApproved = true
+	transactionRes := storage.db.Transaction(func(tx *gorm.DB) error {
+
+		if err := tx.Save(&matchUsersScrims[0]).Error; err != nil {
+			return err
+		}
+		if err := tx.Save(&matchUsersScrims[1]).Error; err != nil {
+			return err
+		}
+		if err := tx.Save(&matchUsersScrims[0].Player).Error; err != nil {
+			return err
+		}
+		if err := tx.Save(&matchUsersScrims[1].Player).Error; err != nil {
+			return err
+		}
+		if err := tx.Save(&match).Error; err != nil {
+			return err
+		}
+		return nil
+	})
+	if transactionRes.Error != nil {
+		return match, errors.New("transaction failed")
 	}
 	return match, nil
 }
