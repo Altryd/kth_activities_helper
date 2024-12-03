@@ -20,17 +20,17 @@ type Storage struct {
 	db *gorm.DB
 }
 
-func createConnectionString(cfg *config.Config) string {
-	return "host=" + cfg.DatabaseConfig.Address +
-		" user=" + cfg.DatabaseConfig.User +
-		" password=" + cfg.DatabaseConfig.Pass +
-		" dbname=" + cfg.DatabaseConfig.Database +
-		" port=" + strconv.Itoa(cfg.DatabaseConfig.Port) +
-		" sslmode=" + cfg.DatabaseConfig.SSLmode
+func createConnectionString() string {
+	return "host=" + config.AppConfig.DatabaseConfig.Address +
+		" user=" + config.AppConfig.DatabaseConfig.User +
+		" password=" + config.AppConfig.DatabaseConfig.Pass +
+		" dbname=" + config.AppConfig.DatabaseConfig.Database +
+		" port=" + strconv.Itoa(config.AppConfig.DatabaseConfig.Port) +
+		" sslmode=" + config.AppConfig.DatabaseConfig.SSLmode
 }
 
-func New(cfg *config.Config, log *slog.Logger) (*Storage, error) {
-	dsn := createConnectionString(cfg)
+func New(log *slog.Logger) (*Storage, error) {
+	dsn := createConnectionString()
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
 		log.Error("Failed to connect to database", err.Error())
@@ -81,7 +81,7 @@ func (storage *Storage) SelectMatches() ([]models.Matches, error) {
 
 func (storage *Storage) SelectOneMatch(id uint64) (models.Matches, error) {
 	match := models.Matches{}
-	result := storage.db.Preload("MatchUserScrim").First(&match, id)
+	result := storage.db.Preload("MatchUserScrim").Preload("MatchType").First(&match, id)
 	if result.Error != nil {
 		return models.Matches{}, result.Error
 	}
@@ -351,7 +351,7 @@ func (storage *Storage) CreatePairs(r *http.Request) (Response, int, error) {
 			}
 
 			matches := []models.MatchUserScrim{}
-			if err := storage.db.Where("match_id IN (SELECT id FROM matches WHERE match_osu_id IN (SELECT match_osu_id FROM match_user_scrims WHERE player_id = ?) AND date < ?)", player.OsuId, oneYearAgo.Format("2006-01-02 15:04:05")).Find(&matches).Error; err != nil {
+			if err := storage.db.Where("match_id IN (SELECT id FROM matches WHERE id IN (SELECT match_id FROM match_user_scrims WHERE player_id = ?) AND date > ?)", player.OsuId, oneYearAgo.Format("2006-01-02 15:04:05")).Find(&matches).Error; err != nil {
 				return response, http.StatusInternalServerError, err
 			}
 

@@ -5,6 +5,7 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/render"
 	"io"
+	"kth_activities_helper/internal/config"
 	resp "kth_activities_helper/internal/lib/response"
 	"log/slog"
 	"net/http"
@@ -38,8 +39,8 @@ func GetDiscordCode(log *slog.Logger) http.HandlerFunc {
 		var apiUrl = "https://discord.com"
 		var resource = "/api/v10/oauth2/token"
 		data := url2.Values{}
-		data.Set("client_id", "") // TODO: придумать конфиг какой-то
-		data.Set("client_secret", "")
+		data.Set("client_id", config.AppConfig.OAuthConfig.DiscordClientId)
+		data.Set("client_secret", config.AppConfig.OAuthConfig.DiscordClientSecret)
 		data.Set("grant_type", "authorization_code")
 		data.Set("code", code)
 		data.Set("redirect_uri", "http://localhost:8089/api/discord")

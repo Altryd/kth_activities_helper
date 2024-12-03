@@ -2,6 +2,10 @@ package main
 
 import (
 	"fmt"
+	"github.com/Altryd/osuParseMpLinks"
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
+	"github.com/go-chi/cors"
 	"kth_activities_helper/internal/config"
 	"kth_activities_helper/internal/database"
 	"kth_activities_helper/internal/http-server/handlers/match"
@@ -12,23 +16,39 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
-
-	"github.com/Altryd/osuParseMpLinks"
-	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/chi/v5/middleware"
-	"github.com/go-chi/cors"
 )
+
+/* TODO: переделать с gin либо все-таки вставить этот package
+func AuthMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		jwt_token, err := c.Cookie("jwt")
+		if err != nil {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+			return
+		}
+
+		claims, err := security.ValidateToken(jwt_token, "access")
+
+		if err != nil {
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		}
+
+		c.Set("osuUserId", claims.OsuUserID)
+		c.Next()
+	}
+}
+*/
 
 func main() {
 	parsingConfig := osuParseMpLinks.ParsingConfig{Debug: true} // TODO: потом удалить, сейчас это нужно, чтобы зависимость не потерялась
 	print(parsingConfig.Debug)
-	cfg := config.Load()
-	fmt.Println(*cfg)
+	config.Load()
+	fmt.Println(config.AppConfig)
 
-	log := setupLogger(cfg.Env)
-	log.Info("Starting backend of kth_activities_helper...", slog.String("env", cfg.Env))
+	log := setupLogger(config.AppConfig.Env)
+	log.Info("Starting backend of kth_activities_helper...", slog.String("env", config.AppConfig.Env))
 
-	storage, err := database.New(cfg, log)
+	storage, err := database.New(log)
 	if err != nil {
 		os.Exit(-1)
 	}
@@ -72,7 +92,7 @@ func main() {
 	router.Post("/api/user", user.New(log, storage))
 	router.Put("/api/matches/{osuId}/edit", user.EditUser(log, storage))
 	router.Get("/api/discord", user.GetDiscordCode(log))
-	router.Get("/api/oauth/osu", user.GetOsuCode(log))
+	router.Get("/api/oauth/osu", user.GetOsuCode(log, storage))
 
 	router.Post("/api/match_user", matchUser.New(log, storage))
 	matchTypes, err := storage.SelectMatchTypes()
@@ -98,11 +118,11 @@ func main() {
 	}
 
 	srv := http.Server{
-		Addr:              cfg.HTTPServer.Address,
+		Addr:              config.AppConfig.HTTPServer.Address,
 		Handler:           router,
-		ReadHeaderTimeout: cfg.HTTPServer.Timeout,
-		WriteTimeout:      cfg.HTTPServer.Timeout,
-		IdleTimeout:       cfg.HTTPServer.IdleTimeout,
+		ReadHeaderTimeout: config.AppConfig.HTTPServer.Timeout,
+		WriteTimeout:      config.AppConfig.HTTPServer.Timeout,
+		IdleTimeout:       config.AppConfig.HTTPServer.IdleTimeout,
 	}
 
 	if err := srv.ListenAndServe(); err != nil {

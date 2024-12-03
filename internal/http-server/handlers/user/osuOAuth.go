@@ -7,20 +7,28 @@ import (
 	"github.com/go-chi/render"
 	"io"
 	resp "kth_activities_helper/internal/lib/response"
+	"kth_activities_helper/internal/models"
+	"kth_activities_helper/internal/security"
 	"log/slog"
 	"net/http"
 	url2 "net/url"
 	"strconv"
 	"strings"
+	"time"
 )
 
 type OsuOAuthResponse struct {
 	resp.Response
 	Username string `json:"username"`
-	OsuId    int    `json:"osu_id"`
+	OsuId    uint64 `json:"osu_id"`
 }
 
-func GetOsuCode(log *slog.Logger) http.HandlerFunc {
+type UserSelectorCreator interface {
+	SelectOneUser(osuId uint64) (models.User, error)
+	CreateUser(osuId uint64, discordId uint64, rating uint32, username string, active bool) (uint64, error)
+}
+
+func GetOsuCode(log *slog.Logger, oneUserSelector UserSelectorCreator) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const op = "handlers.user.get.GetOne"
 		localLog := log.With(
@@ -114,9 +122,32 @@ func GetOsuCode(log *slog.Logger) http.HandlerFunc {
 			http.Error(w, http.StatusText(500), 500)
 			return
 		}
-		id := int(dataRead["id"].(float64))
+		id := uint64(dataRead["id"].(float64))
 		username := dataRead["username"].(string)
 
+		var idInDatabase uint64 = 0
+		user, err := oneUserSelector.SelectOneUser(id)
+		if err != nil {
+			id_, err := oneUserSelector.CreateUser(id, 0, 0, username, false)
+			if err != nil {
+				localLog.Error("Failed to create user", slog.String("error", err.Error()))
+				render.JSON(w, r, resp.Error("Failed to create match"))
+				return
+			}
+			idInDatabase = id_
+			user, _ = oneUserSelector.SelectOneUser(idInDatabase) // not checking error because we just added the user to database
+		} else {
+			idInDatabase = user.OsuId
+		}
+		// http.SetCookie(w, &http.Cookie{Name: username, HttpOnly: false})
+
+		accessTokenOurDb, err := security.GenerateToken(&user, "access")
+		if err != nil {
+			localLog.Error("Failed to generate access token")
+			render.JSON(w, r, resp.Error("Failed to generate access token"))
+			return
+		}
+		security.SetCookie(w, "jwt", accessTokenOurDb, time.Now().Add(time.Hour*2))
 		render.JSON(w, r, OsuOAuthResponse{ // TODO: redirect here
 			Response: resp.OK(),
 			OsuId:    id,

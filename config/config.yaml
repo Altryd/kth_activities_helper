@@ -9,3 +9,8 @@ database_config:
     user: "Artem"
     pass: "LEAKYWEBAPPARTEMPASS"
     database: "osuDB"
+security_config:
+    secret_key: ""
+oauth_config:
+    discord_client_id: ""
+    discord_client_secret: ""

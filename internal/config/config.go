@@ -7,10 +7,12 @@ import (
 	"time"
 )
 
-type Config struct {
+var AppConfig struct {
 	Env            string `yaml:"env" env:"ENV" env-required:"true"`
 	HTTPServer     `yaml:"http_server"`
 	DatabaseConfig `yaml:"database_config"`
+	SecurityConfig `yaml:"security_config"`
+	OAuthConfig    `yaml:"oauth_config"`
 }
 
 type HTTPServer struct {
@@ -28,7 +30,15 @@ type DatabaseConfig struct {
 	SSLmode  string `yaml:"sslmode" env:"DB_SSLMODE" env-default:"disable"`
 }
 
-func Load() *Config {
+type SecurityConfig struct {
+	SecretKey string `yaml:"secret_key" env:"SECRET_KEY" env-default:"secret"`
+}
+type OAuthConfig struct {
+	DiscordClientId     string `yaml:"discord_client_id" env:"discord_client_id" env-default:""`
+	DiscordClientSecret string `yaml:"discord_client_secret" env:"discord_client_secret" env-default:""`
+}
+
+func Load() {
 	configPath := "config\\config.yaml"
 	//configPath := os.Getenv("CONFIG_PATH")
 	//if configPath == "" {
@@ -39,10 +49,8 @@ func Load() *Config {
 		log.Fatalf("Config file does not exist: %s", configPath)
 	}
 
-	var cfg Config
-	if err := cleanenv.ReadConfig(configPath, &cfg); err != nil {
+	// var cfg Config
+	if err := cleanenv.ReadConfig(configPath, &AppConfig); err != nil {
 		log.Fatalf("Cannot read config: %s", err)
 	}
-
-	return &cfg
 }
