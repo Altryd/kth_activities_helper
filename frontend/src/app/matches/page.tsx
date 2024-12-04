@@ -1,6 +1,8 @@
+"use client"
 import 'tailwindcss/tailwind.css'
 import clsx from 'clsx';
 import CheckButton from './check_button';
+import { useEffect, useState } from 'react';
 
 type playerStruct =  {
 	OsuId:     number,
@@ -27,15 +29,58 @@ export type matchStruct = {
 	IsApproved:     boolean,
 }
 
-export default async function UsersPage() {
-    const response = await fetch("http://localhost:8089/api/matches");
-    const resp_json = await response.json();
-    const matches_data = resp_json['matches'];
+export default function UsersPage() {
+    /*
+    const AxiosInstance = axios.create({
+        baseURL: "http://localhost:8089",
+        withCredentials: true
+    });
+    useEffect(() => {
+        AxiosInstance.get("/api/matches")
+        .then(() => {
+            console.log("udachno");
+        })
+    }, [])
+    */
+    const [matches_data, setMatchesData] = useState([]);
+    useEffect(() => {
+        const response = fetch("http://localhost:8089/api/matches", { 
+            credentials: "include",
+            method: 'GET',
+            headers: {
+              'Accept': 'application/json',
+            },
+        });
+        // console.log("ky");
+        response.then((resp) => {
+            resp.json()
+            .then((response_json) => {
+                setMatchesData(response_json['matches']);
+                // matches_data = response_json['matches'];
+                // console.log(matches_data);
+            })
+            .catch((err) => {
+                console.log(err);
+                setMatchesData([]);
+                // matches_data = [];
+            })
+        })
+        .catch((err) => {
+            console.log(err);
+            setMatchesData([]);
+        })
+    }, [])
+    
+    
+    // console.log(matches_data);
+    if (matches_data.length == 0) {
+        return "Загрузка..";
+    }
     // console.log(matches_data);
     return (
         <div className="grid grid-cols-3 gap-4 p-4">
             {matches_data.map((matchstruct: matchStruct) => {
-                let date_ = new Date(matchstruct.Date);
+                const date_ = new Date(matchstruct.Date);
                 
                 // console.log(date_);
                 return <div className={clsx(

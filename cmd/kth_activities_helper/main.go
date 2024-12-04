@@ -12,32 +12,43 @@ import (
 	"kth_activities_helper/internal/http-server/handlers/matchType"
 	matchUser "kth_activities_helper/internal/http-server/handlers/matchUserScrim"
 	"kth_activities_helper/internal/http-server/handlers/user"
+	"kth_activities_helper/internal/security"
 	"kth_activities_helper/internal/utility"
 	"log/slog"
 	"net/http"
 	"os"
 )
 
-/* TODO: переделать с gin либо все-таки вставить этот package
-func AuthMiddleware() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		jwt_token, err := c.Cookie("jwt")
+func AuthMiddleware(next http.Handler) http.Handler {
+	fn := func(w http.ResponseWriter, r *http.Request) {
+		// ctx := r.Context()
+		jwt_token, err := r.Cookie("jwt-kth")
+		//fmt.Println("cookie auth middleware: ", jwt_token, err)
+		//fmt.Println("cookies: ", r.Cookies())
+		// jwt_token, err := c.Cookie("jwt")
 		if err != nil {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+			w.WriteHeader(http.StatusUnauthorized)
+			// c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 			return
 		}
 
-		claims, err := security.ValidateToken(jwt_token, "access")
+		claims, err := security.ValidateToken(jwt_token.Value, "access")
 
 		if err != nil {
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+			// c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		}
-
-		c.Set("osuUserId", claims.OsuUserID)
-		c.Next()
+		// TODO: убрать принт ниже  остальные комменты после окончания тестирования
+		fmt.Printf("\n[middleware] зашел пользователь с : osuid=%d ; discordId=%d\n", claims.OsuUserID, claims.DiscordUserId)
+		// ctx.
+		// ctx.v
+		// c.Set("osuUserId", claims.OsuUserID)
+		// c.Next()
+		next.ServeHTTP(w, r)
 	}
+	return http.HandlerFunc(fn)
 }
-*/
 
 func main() {
 	parsingConfig := osuParseMpLinks.ParsingConfig{Debug: true} // TODO: потом удалить, сейчас это нужно, чтобы зависимость не потерялась
@@ -66,21 +77,23 @@ func main() {
 	router.Use(middleware.URLFormat)
 	router.Use(cors.Handler(cors.Options{ // Чтобы с фронта можно POST послать
 		// AllowedOrigins:   []string{"https://foo.com"}, // Use this to allow specific origin hosts
-		AllowedOrigins: []string{"https://*", "http://*"},
+		// AllowedOrigins: []string{"http://localhost:3000", "https://localhost/*", "http://localhost:3000/*", "http://localhost:8089"},
+		AllowedOrigins: []string{"http://localhost:3000", "http://localhost:3000", "http://localhost:8089"},
 		// AllowOriginFunc:  func(r *http.Request, origin string) bool { return true },
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
-		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
+		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token", "Cookie"},
 		ExposedHeaders:   []string{"Link"},
-		AllowCredentials: false,
-		MaxAge:           300, // Maximum value not ignored by any of major browsers
+		AllowCredentials: true,
+		MaxAge:           33300, // Maximum value not ignored by any of major browsers
 	}))
 
-	router.Get("/api/matches", match.GetAll(log, storage))
+	router.With(AuthMiddleware).Get("/api/matches", match.GetAll(log, storage))
+	// router.Get("/api/matches", match.GetAll(log, storage))
 	router.Get("/api/matches/{id}", match.GetOne(log, storage))
-	router.Post("/api/match", match.New(log, storage))
+	router.With(AuthMiddleware).Post("/api/match", match.New(log, storage))
 	router.Put("/api/matches/{id}/edit", match.Edit(log, storage))
 	router.Post("/api/matches/{id}/approve", match.Approve(log, storage))
-	router.Post("/api/parse_scrims", match.ParseMatches(log))
+	router.With(AuthMiddleware).Post("/api/parse_scrims", match.ParseMatches(log))
 
 	router.Get("/api/create_pairs", match.CreatePairs(log, storage, storage))
 
@@ -90,6 +103,7 @@ func main() {
 	router.Get("/api/users", user.GetAll(log, storage))
 	router.Get("/api/users/{osuId}", user.GetOne(log, storage))
 	router.Post("/api/user", user.New(log, storage))
+	router.With(AuthMiddleware).Get("/api/me", user.GetMe(log, storage))
 	router.Put("/api/matches/{osuId}/edit", user.EditUser(log, storage))
 	router.Get("/api/discord", user.GetDiscordCode(log))
 	router.Get("/api/oauth/osu", user.GetOsuCode(log, storage))

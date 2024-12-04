@@ -1,6 +1,5 @@
 'use client'
 import { useState } from "react";
-import ReactDOM from "react-dom";
 
 export type ParsedLine = {
     id: number,
@@ -17,10 +16,11 @@ export type ParsedLine = {
 
 
 export default function ParseScrims() {
-    let [parsedLines, setParsedLines] = useState([]);
+    const [parsedLines, setParsedLines] = useState([]);
     const SendToDB = async (parsedLine: ParsedLine) => {
         console.log("parsed line: ", parsedLine);
         const response = fetch('http://localhost:8089/api/match', {
+            credentials: "include",
             method: 'POST',
             headers: {
               'Accept': 'application/json',
@@ -31,16 +31,17 @@ export default function ParseScrims() {
             )
           })
         response.then((resp) => {
-            let response_json = resp.json()
+            resp.json()
             .then((response_json) => {
                 console.log("resp_json ==", response_json);
-                var to_send = {
+                const to_send = {
                     "player_id": parsedLine.first_player_id,
                     "match_id": response_json.match_id,
                     "score": parsedLine.first_player_score,
                     "is_blue": true
                 }
                 const responseCreateMatchLinkFirst = fetch('http://localhost:8089/api/match_user', {
+                    credentials: "include",
                     method: 'POST',
                     headers: {
                         'Accept': 'application/json',
@@ -50,14 +51,15 @@ export default function ParseScrims() {
                         to_send
                       )
                 });
-                responseCreateMatchLinkFirst.then((resp) => {
-                    var to_send_second = {
+                responseCreateMatchLinkFirst.then(() => {
+                    const to_send_second = {
                         "player_id": parsedLine.second_player_id,
                         "match_id": response_json.match_id,
                         "score": parsedLine.second_player_score,
                         "is_blue": false
                     }
                     const responseCreateMatchLinkSecond = fetch('http://localhost:8089/api/match_user', {
+                        credentials: "include",
                         method: 'POST',
                         headers: {
                             'Accept': 'application/json',
@@ -67,10 +69,10 @@ export default function ParseScrims() {
                             to_send_second
                           )
                     });
-                    responseCreateMatchLinkSecond.then((resp) =>
+                    responseCreateMatchLinkSecond.then(() =>
                     {
                         console.log("ALL GREAT!!")
-                        let lastRes = document.getElementById("lastRes");
+                        const lastRes = document.getElementById("lastRes");
                         if (lastRes != null) {
                             lastRes.innerHTML = "Отправил в базу данных матч с id=" + parsedLine.match_osu_id;
                         }
@@ -83,7 +85,7 @@ export default function ParseScrims() {
             })
             .catch()
         })
-        response.then((resp) => {
+        response.then(() => {
             
             
         })
@@ -94,15 +96,15 @@ export default function ParseScrims() {
 
     const handleParseClick = async () => {
         setParsedLines([]);
-        let textarea_value = (document.getElementById("ParseLinks") as HTMLInputElement).value;
+        const textarea_value = (document.getElementById("ParseLinks") as HTMLInputElement).value;
         const mplinks: { mplink: string; warmups: number; skip_last: number; }[] = [];
         if (textarea_value.length < 1) {
             return;
         }
-        let spltted_mplinks = textarea_value.split("\n");
+        const spltted_mplinks = textarea_value.split("\n");
         spltted_mplinks.forEach(function(line: string) {
-            let splitted_line = line.split(',');
-            let mplink = splitted_line[0];
+            const splitted_line = line.split(',');
+            const mplink = splitted_line[0];
             if (mplink.length < 3) {
                 return
             }
@@ -125,10 +127,10 @@ export default function ParseScrims() {
         });
     
         const response = await fetch('http://localhost:8089/api/parse_scrims', {
+            credentials: "include",
             method: 'POST',
             headers: {
               'Accept': 'application/json',
-              'Content-Type': 'application/json',
             },
             body: JSON.stringify(
                 mplinks,
@@ -136,8 +138,8 @@ export default function ParseScrims() {
           })
         const parse_result = await response.json();
         const parsed_lines = parse_result["parsed_lines"];
-        let string_to_show = "";
-        let result = document.getElementById("result");
+        // let string_to_show = "";
+        const result = document.getElementById("result");
         if (result === null) return;
         result.innerHTML = "";
         setParsedLines(parsed_lines);
@@ -157,8 +159,8 @@ export default function ParseScrims() {
         setParsedLines(parsedLines);
     }
 
-    let firstPlayerWon = "_first_player_won";
-    let secondPlayerWon = "_second_player_won";
+    const firstPlayerWon = "_first_player_won";
+    const secondPlayerWon = "_second_player_won";
     return (<div><h1>Здесь вы можете отправить матчи на проверку:</h1>
     Синтаксис отправки (через запятую): ссылка,количество разминочных карт,количество карт с конца которые нужно пропустить
     Пример:https://osu.ppy.sh/community/matches/111534249/,2,3

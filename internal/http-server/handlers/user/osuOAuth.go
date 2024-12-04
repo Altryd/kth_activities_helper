@@ -147,12 +147,8 @@ func GetOsuCode(log *slog.Logger, oneUserSelector UserSelectorCreator) http.Hand
 			render.JSON(w, r, resp.Error("Failed to generate access token"))
 			return
 		}
-		security.SetCookie(w, "jwt", accessTokenOurDb, time.Now().Add(time.Hour*2))
-		render.JSON(w, r, OsuOAuthResponse{ // TODO: redirect here
-			Response: resp.OK(),
-			OsuId:    id,
-			Username: username,
-		})
+		security.SetCookie(w, "jwt-kth", accessTokenOurDb, int(time.Hour.Seconds()*2))
+		http.Redirect(w, r, "http://localhost:3000/users", 302)
 		return
 	}
 }
