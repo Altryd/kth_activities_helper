@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"github.com/Altryd/osuParseMpLinks"
 	"github.com/go-chi/chi/v5"
@@ -41,11 +42,8 @@ func AuthMiddleware(next http.Handler) http.Handler {
 		}
 		// TODO: убрать принт ниже  остальные комменты после окончания тестирования
 		fmt.Printf("\n[middleware] зашел пользователь с : osuid=%d ; discordId=%d\n", claims.OsuUserID, claims.DiscordUserId)
-		// ctx.
-		// ctx.v
-		// c.Set("osuUserId", claims.OsuUserID)
-		// c.Next()
-		next.ServeHTTP(w, r)
+		ctx := context.WithValue(r.Context(), "props", claims)
+		next.ServeHTTP(w, r.WithContext(ctx))
 	}
 	return http.HandlerFunc(fn)
 }
@@ -105,7 +103,7 @@ func main() {
 	router.Post("/api/user", user.New(log, storage))
 	router.With(AuthMiddleware).Get("/api/me", user.GetMe(log, storage))
 	router.Put("/api/matches/{osuId}/edit", user.EditUser(log, storage))
-	router.Get("/api/discord", user.GetDiscordCode(log))
+	router.With(AuthMiddleware).Get("/api/discord", user.GetDiscordCode(log, storage))
 	router.Get("/api/oauth/osu", user.GetOsuCode(log, storage))
 
 	router.Post("/api/match_user", matchUser.New(log, storage))

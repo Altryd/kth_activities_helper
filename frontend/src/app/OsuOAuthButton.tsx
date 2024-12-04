@@ -1,7 +1,6 @@
 "use client"
-import { userInfo } from "os";
-import { useEffect, useState } from "react";
 import useSWR from 'swr'
+import DiscordOauthButton from "./DiscordOAuthButton";
 
 export type UserInfo = {
     osu_id: number,
@@ -41,8 +40,12 @@ export default function OsuOAuthButton() {
             <span></span>
         )
     }
-    return <span>Вы вошли как {data.user.username}, ваш рейтинг: {data.user.rating}</span>
-    console.log(data);
+    if (data.user.discord_id == 0)
+    {
+        return <span>Вы вошли как {data.user.username}, ваш рейтинг: {data.user.rating}<DiscordOauthButton isLoading={isLoading} isLinked={false}/></span>    
+    }
+    return <span>Вы вошли как {data.user.username}, ваш рейтинг: {data.user.rating} <DiscordOauthButton isLinked={true} isLoading={isLoading}/></span>
+    // console.log(data);
     /* useEffect(() => {
     
       const response = fetch("http://localhost:8089/api/me", { 

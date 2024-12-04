@@ -7,10 +7,14 @@ import (
 	"io"
 	"kth_activities_helper/internal/config"
 	resp "kth_activities_helper/internal/lib/response"
+	"kth_activities_helper/internal/models"
+	"kth_activities_helper/internal/security"
 	"log/slog"
 	"net/http"
 	url2 "net/url"
+	"strconv"
 	"strings"
+	"time"
 )
 
 type DiscordOAuthResponse struct {
@@ -19,13 +23,33 @@ type DiscordOAuthResponse struct {
 	DiscordId string `json:"discord_id"`
 }
 
-func GetDiscordCode(log *slog.Logger) http.HandlerFunc {
+type UserSelectorEditor interface {
+	SelectOneUser(osuId uint64) (models.User, error)
+	EditUser(osuId uint64, discordId uint64, rating uint32, username string, active bool) (models.User, error)
+}
+
+func GetDiscordCode(log *slog.Logger, userSelectorEditor UserSelectorEditor) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const op = "handlers.user.get.GetOne"
 		localLog := log.With(
 			slog.String("op", op),
 			slog.String("request_id", middleware.GetReqID(r.Context())),
 		)
+		// checking for props from http.Context and for user existence
+		props, ok := r.Context().Value("props").(*security.Claims)
+		if !ok {
+			localLog.Error("Failed to do discordOauth because of context")
+			render.JSON(w, r, resp.Error("Failed to do discord OAuth"))
+			return
+		}
+		localLog.Info("props: ", props.OsuUserID, props.DiscordUserId)
+		user, err := userSelectorEditor.SelectOneUser(props.OsuUserID)
+		if err != nil {
+			localLog.Error("Failed to do discordOauth because user does not exist")
+			render.JSON(w, r, resp.Error("Failed to do discord OAuth"))
+			http.Error(w, http.StatusText(404), 404)
+			return
+		}
 		// PART 0: GETTING CODE
 		var queryResults = r.URL.Query()
 		if len(queryResults) != 1 {
@@ -56,8 +80,12 @@ func GetDiscordCode(log *slog.Logger) http.HandlerFunc {
 		}
 		req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 		response, err := client.Do(req)
+		/* defer response.Body.Close()
+		body, err := io.ReadAll(response.Body)
+		var dataRead map[string]interface{}
+		json.Unmarshal(body, &dataRead) */
 		if err != nil {
-			localLog.Error("Something bad happened with post request")
+			localLog.Error("Something bad happened with post request", err)
 			http.Error(w, http.StatusText(500), 500)
 			return
 		}
@@ -102,14 +130,27 @@ func GetDiscordCode(log *slog.Logger) http.HandlerFunc {
 			http.Error(w, http.StatusText(500), 500)
 			return
 		}
-		id := dataRead["id"].(string)
-		username := dataRead["username"].(string)
+		discordId := dataRead["id"].(string)
+		discordIdUint, err := strconv.ParseUint(discordId, 10, 64)
+		if err != nil {
+			localLog.Error("Something bad happened with discordId")
+		}
+		// username := dataRead["username"].(string)
+		user, err = userSelectorEditor.EditUser(user.OsuId, discordIdUint, user.Rating, user.Username, user.Active)
+		if err != nil {
+			localLog.Error("Something bad when editing user ", slog.String(discordId, "discordIdUint"))
+			http.Error(w, http.StatusText(500), 500)
+			return
+		}
 
-		render.JSON(w, r, DiscordOAuthResponse{ // TODO: придумать какой-то редирект наверное
-			Response:  resp.OK(),
-			DiscordId: id,
-			Username:  username,
-		})
+		accessTokenOurDb, err := security.GenerateToken(&user, "access")
+		if err != nil {
+			localLog.Error("Failed to generate access token")
+			render.JSON(w, r, resp.Error("Failed to generate access token"))
+			return
+		}
+		security.SetCookie(w, "jwt-kth", accessTokenOurDb, int(time.Hour.Seconds()*2))
+		http.Redirect(w, r, "http://localhost:3000/users", 302)
 		return
 	}
 }
