@@ -3,10 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/Altryd/osuParseMpLinks"
-	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/chi/v5/middleware"
-	"github.com/go-chi/cors"
 	"kth_activities_helper/internal/config"
 	"kth_activities_helper/internal/database"
 	"kth_activities_helper/internal/http-server/handlers/match"
@@ -18,6 +14,11 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+
+	"github.com/Altryd/osuParseMpLinks"
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
+	"github.com/go-chi/cors"
 )
 
 func AuthMiddleware(next http.Handler) http.Handler {
@@ -84,6 +85,8 @@ func main() {
 		AllowCredentials: true,
 		MaxAge:           33300, // Maximum value not ignored by any of major browsers
 	}))
+
+	router.With(AuthMiddleware).Post("/api/subscribe", user.Subscribe(log, storage))
 
 	router.With(AuthMiddleware).Get("/api/matches", match.GetAll(log, storage))
 	// router.Get("/api/matches", match.GetAll(log, storage))
