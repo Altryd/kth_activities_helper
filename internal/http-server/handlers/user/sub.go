@@ -12,6 +12,10 @@ import (
 	"github.com/go-chi/render"
 )
 
+type SubscribeResponse struct {
+	resp.Response
+}
+
 func Subscribe(log *slog.Logger, storage *database.Storage) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const op = "handlers.user.Subscribe"
@@ -30,6 +34,9 @@ func Subscribe(log *slog.Logger, storage *database.Storage) http.HandlerFunc {
 
 		discordID := props.DiscordUserId
 		fmt.Println(discordID)
-		render.JSON(w, r, resp.OK)
+		render.JSON(w, r, SubscribeResponse{
+			Response: resp.OK(),
+		})
+		return
 	}
 }
