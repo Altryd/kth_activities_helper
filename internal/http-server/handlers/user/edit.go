@@ -35,11 +35,13 @@ func EditUser(log *slog.Logger, userEditor UserEditor) http.HandlerFunc {
 			slog.String("op", op),
 			slog.String("request_id", middleware.GetReqID(r.Context())),
 		)
-
+		
 		osuId := chi.URLParam(r, "osuId")
+		localLog.Info("Extracted osuId", slog.String("osuId", osuId))
 		id, err := strconv.ParseUint(osuId, 10, 64)
 		if err != nil {
-			http.Error(w, http.StatusText(400), 400)
+			localLog.Error("Bad Request ParseUint")
+			render.JSON(w, r, resp.BadRequest("Bad Request ParseUint"))
 			return
 		}
 
@@ -53,9 +55,11 @@ func EditUser(log *slog.Logger, userEditor UserEditor) http.HandlerFunc {
 		}
 
 		if err := validator.New().Struct(req); err != nil {
-			validateErr := err.(validator.ValidationErrors)
+			// validateErr := err.(validator.ValidationErrors)
+			// render.JSON(w, r, resp.ValidationError(validateErr))
+
 			localLog.Error("Failed to validate request")
-			render.JSON(w, r, resp.ValidationError(validateErr))
+			render.JSON(w, r, resp.BadRequest("Invalid osuId"))
 			return
 		}
 

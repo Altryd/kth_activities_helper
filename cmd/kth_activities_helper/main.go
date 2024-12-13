@@ -105,7 +105,7 @@ func main() {
 	router.Get("/api/users/{osuId}", user.GetOne(log, storage))
 	router.Post("/api/user", user.New(log, storage))
 	router.With(AuthMiddleware).Get("/api/me", user.GetMe(log, storage))
-	router.Put("/api/matches/{osuId}/edit", user.EditUser(log, storage))
+	router.Put("/api/user/{osuId}/edit", user.EditUser(log, storage))
 	router.With(AuthMiddleware).Get("/api/discord", user.GetDiscordCode(log, storage))
 	router.Get("/api/oauth/osu", user.GetOsuCode(log, storage))
 
