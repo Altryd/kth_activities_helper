@@ -16,7 +16,7 @@ type EditRequest struct {
 	DiscordId uint64 `json:"discord_id" validate:"required,gte=0"`
 	Rating    uint32 `json:"rating" validate:"required,gte=0"`
 	Username  string `json:"username" validate:"required"`
-	Active    bool   `json:"active" validate:"required,bool"`
+	Active    bool   `json:"active"`
 }
 
 type EditResponse struct {
@@ -37,6 +37,7 @@ func EditUser(log *slog.Logger, userEditor UserEditor) http.HandlerFunc {
 		)
 		
 		osuId := chi.URLParam(r, "osuId")
+		
 		id, err := strconv.ParseUint(osuId, 10, 64)
 		if err != nil {
 			localLog.Error("Bad Request ParseUint")
@@ -45,7 +46,7 @@ func EditUser(log *slog.Logger, userEditor UserEditor) http.HandlerFunc {
 		}
 
 		var req EditRequest
-
+		
 		err = render.DecodeJSON(r.Body, &req)
 		if err != nil {
 			localLog.Error("Failed to decode request body")
@@ -58,7 +59,7 @@ func EditUser(log *slog.Logger, userEditor UserEditor) http.HandlerFunc {
 			// render.JSON(w, r, resp.ValidationError(validateErr))
 
 			localLog.Error("Failed to validate request")
-			render.JSON(w, r, resp.BadRequest("Invalid osuId"))
+			render.JSON(w, r, resp.BadRequest("Failed to validate request"))
 			return
 		}
 

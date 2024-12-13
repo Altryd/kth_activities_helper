@@ -1,13 +1,13 @@
 "use client";
 import React, { useState } from 'react';
 import 'tailwindcss/tailwind.css';
-//osuId uint64, discordId uint64, rating uint32, username string, active bool
+// discordId uint64, rating uint32, username string, active bool
 type User = {
     osu_id: number,
     discord_id: number,
     rating: number, 
     username: string,
-    active: number,
+    active: boolean,
     MatchUserScrim: Array<object>
 };
 
@@ -37,11 +37,11 @@ export default function UsersPage() {
     };
     function transformUser(user: User) {
         return {
-          osuId: user.osu_id,
-        discord_id: user.discord_id,
-        rating: user.rating,
-        username: user.username,
-        active: user.active,
+            // osu_id: user.osu_id,
+            discord_id: Number(user.discord_id),
+            rating: Number(user.rating),
+            username: user.username,
+            active: Boolean(Number(user.active)),
         };
       }
       const handleSubmit = async () => {
@@ -67,9 +67,18 @@ export default function UsersPage() {
             }
       
             console.log("User updated successfully");
+            setUsers((prevUsers) =>
+                prevUsers.map((user) =>
+                    user.osu_id === selectedUser.osu_id
+                        ? { ...user, ...transformedUser }
+                        : user
+                )
+            );
+
           } catch (error) {
             console.error(`Edit user ERROR: ${error}`);
           } finally {
+
             setIsModalOpen(false);
           }
         }
@@ -130,7 +139,7 @@ export default function UsersPage() {
                             <label className="block mb-2">Active</label>
                             <select
                                 name="active"
-                                value={selectedUser.active}
+                                value={Boolean(Number(selectedUser.active)) ? 1 : 0}
                                 onChange={handleInputChange}
                                 className="w-full p-2 mb-4 border rounded"
                             >
