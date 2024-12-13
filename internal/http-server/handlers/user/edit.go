@@ -1,7 +1,7 @@
 package user
 
 import (
-	"github.com/go-chi/chi"
+	"github.com/go-chi/chi/v5" 
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/render"
 	"github.com/go-playground/validator/v10"
@@ -37,7 +37,6 @@ func EditUser(log *slog.Logger, userEditor UserEditor) http.HandlerFunc {
 		)
 		
 		osuId := chi.URLParam(r, "osuId")
-		localLog.Info("Extracted osuId", slog.String("osuId", osuId))
 		id, err := strconv.ParseUint(osuId, 10, 64)
 		if err != nil {
 			localLog.Error("Bad Request ParseUint")
