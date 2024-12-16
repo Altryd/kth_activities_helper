@@ -88,7 +88,8 @@ func main() {
 
 	router.With(AuthMiddleware).Post("/api/subscribe", user.Subscribe(log, storage))
 
-	router.With(AuthMiddleware).Get("/api/matches", match.GetAll(log, storage))
+	// router.With(AuthMiddleware).Get("/api/matches", match.GetAll(log, storage))
+	router.Get("/api/matches", match.GetAll(log, storage))
 	// router.Get("/api/matches", match.GetAll(log, storage))
 	router.Get("/api/matches/{id}", match.GetOne(log, storage))
 	router.With(AuthMiddleware).Post("/api/match", match.New(log, storage))

@@ -5,7 +5,6 @@ import (
 	"github.com/go-chi/render"
 	resp "kth_activities_helper/internal/lib/response"
 	"kth_activities_helper/internal/models"
-	"kth_activities_helper/internal/security"
 	"log/slog"
 	"net/http"
 	"time"
@@ -52,7 +51,7 @@ func GetAll(log *slog.Logger, matchesSelector MatchesSelector) http.HandlerFunc 
 			slog.String("op", op),
 			slog.String("request_id", middleware.GetReqID(r.Context())),
 		)
-		props, ok := r.Context().Value("props").(*security.Claims)
+		/*props, ok := r.Context().Value("props").(*security.Claims)  // TODO: uncomment
 
 		if !ok {
 			localLog.Error("Failed to select all matches because of context")
@@ -61,7 +60,7 @@ func GetAll(log *slog.Logger, matchesSelector MatchesSelector) http.HandlerFunc 
 		}
 		localLog.Info("props: ", props.OsuUserID, props.DiscordUserId)
 		// fmt.Print(props)
-
+		*/
 		matches, err := matchesSelector.SelectMatches()
 		if err != nil {
 			localLog.Error("Failed to select all matches", slog.String("error", err.Error()))

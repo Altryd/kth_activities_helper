@@ -24,6 +24,7 @@ export default function OsuOAuthButton() {
 
     const { data, error, isLoading } = useSWR('http://localhost:8089/api/me', fetcher)
     console.log(data, error, isLoading);
+    let subscription_message = <span>Вы не подписаны на составление пар</span>;
     if (error)
     {
         const link_to_osu_oauth = "https://osu.ppy.sh/oauth/authorize?client_id=23437&redirect_uri=http%3A%2F%2Flocalhost%3A8089%2Fapi%2Foauth%2Fosu&response_type=code&scope=public+identify&state=randomval";
@@ -40,11 +41,17 @@ export default function OsuOAuthButton() {
             <span></span>
         )
     }
+    if (data.user.active)
+    {
+        subscription_message = <span><i>Вы подписаны на составление пар</i></span>;
+    }
     if (data.user.discord_id == 0)
     {
-        return <span>Вы вошли как {data.user.username}, ваш рейтинг: {data.user.rating}<DiscordOauthButton isLoading={isLoading} isLinked={false}/></span>    
+        return <div>Вы вошли как {data.user.username}, ваш рейтинг: {data.user.rating} 
+        <DiscordOauthButton isLoading={isLoading} isLinked={false}/> {subscription_message}</div>    
     }
-    return <span>Вы вошли как {data.user.username}, ваш рейтинг: {data.user.rating} <DiscordOauthButton isLinked={true} isLoading={isLoading}/></span>
+    return <div>Вы вошли как {data.user.username}, ваш рейтинг: {data.user.rating}  
+    <DiscordOauthButton isLinked={true} isLoading={isLoading}/> {subscription_message}</div>
     // console.log(data);
     /* useEffect(() => {
     
