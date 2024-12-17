@@ -91,7 +91,7 @@ export default function UsersPage() {
                 },
                 )} key={matchstruct.Id}>
                 <div>
-                    {date_.getDay()}.{date_.getMonth()}.{date_.getFullYear()} {" | "}
+                    {date_.getDate()}.{date_.getMonth() + 1}.{date_.getFullYear()} {" | "}
                     {matchstruct.MatchUserScrim[0].Player.Username} {matchstruct.MatchUserScrim[0].Score} {" - "}  
                     {matchstruct.MatchUserScrim[1].Score} {matchstruct.MatchUserScrim[1].Player.Username} <a style={{color: "blue"}} href={"https://osu.ppy.sh/community/matches/" + matchstruct.MatchOsuID}>🌐</a> 
                     <CheckButton matchStruct={matchstruct} text='✓'></CheckButton><button style={{color: "gray"}}>✏️</button><CheckButton matchStruct={matchstruct} text='❌'></CheckButton>

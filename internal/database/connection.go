@@ -97,7 +97,7 @@ func (storage *Storage) CreateMatch(osuMatchId uint64, matchTypeId uint64, match
 	return matchToCreate.Id, nil
 }
 
-func (storage *Storage) EditMatch(matchId uint64, matchTypeId uint64, matchDate time.Time, isApproved bool) (models.Matches, error) {
+func (storage *Storage) EditMatchOld(matchId uint64, matchTypeId uint64, matchDate time.Time, isApproved bool) (models.Matches, error) {
 	match := models.Matches{}
 	result := storage.db.First(&match, matchId)
 	if result.Error != nil {
@@ -111,6 +111,75 @@ func (storage *Storage) EditMatch(matchId uint64, matchTypeId uint64, matchDate 
 		return models.Matches{}, result.Error
 	}
 	return match, nil
+}
+
+func (storage *Storage) EditMatchScrim(matchId uint64, matchDate time.Time, firstPlayerId uint64,
+	firstPlayerScore uint64, secondPlayerId uint64, secondPlayerScore uint64) (models.Matches, error) {
+	match := models.Matches{}
+	result := storage.db.Preload("MatchUserScrim").First(&match, matchId)
+	if result.Error != nil {
+		return models.Matches{}, result.Error
+	}
+	if len(match.MatchUserScrim) == 2 {
+		if match.MatchUserScrim[0].PlayerId == firstPlayerId && match.MatchUserScrim[1].PlayerId == secondPlayerId {
+			match.MatchUserScrim[0].Score = firstPlayerScore
+			match.MatchUserScrim[1].Score = secondPlayerScore
+		} else if match.MatchUserScrim[0].PlayerId == secondPlayerId && match.MatchUserScrim[1].PlayerId == firstPlayerId {
+			match.MatchUserScrim[0].Score = secondPlayerScore
+			match.MatchUserScrim[1].Score = firstPlayerScore
+		} else {
+			return models.Matches{}, errors.New("Players id mismatch !")
+		}
+	}
+	match.Date = matchDate
+	result = storage.db.Save(&match) // TODO: чекнуть, сохраняются ли скоры
+	/* transactionRes := storage.db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Save(&m).Error; err != nil {
+			return err
+		}
+		if err := tx.Delete(&match).Error; err != nil {
+			return err
+		}
+		return nil
+	})
+	// result = storage.db.Delete(&match)
+	if transactionRes != nil {
+		return false, transactionRes
+	}*/
+	// match.MatchTypeId = matchTypeId
+
+	if result.Error != nil {
+		return models.Matches{}, result.Error
+	}
+	return match, nil
+}
+
+func (storage *Storage) DeleteMatch(matchId uint64) (bool, error) {
+	match := models.Matches{}
+	result := storage.db.Preload("MatchUserScrim").First(&match, matchId)
+	if result.Error != nil {
+		return false, result.Error
+	}
+	if match.IsApproved {
+		return false, errors.New("The match is approved")
+	}
+	var matchesUserScrim []models.MatchUserScrim
+	matchesUserScrim = match.MatchUserScrim
+	// result = storage.db.Find(&matchesUserScrim)
+	transactionRes := storage.db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Delete(&matchesUserScrim).Error; err != nil {
+			return err
+		}
+		if err := tx.Delete(&match).Error; err != nil {
+			return err
+		}
+		return nil
+	})
+	// result = storage.db.Delete(&match)
+	if transactionRes != nil {
+		return false, transactionRes
+	}
+	return true, nil
 }
 
 func (storage *Storage) ApproveMatch(matchId uint64) (models.Matches, error) {

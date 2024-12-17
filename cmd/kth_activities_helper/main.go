@@ -94,6 +94,7 @@ func main() {
 	router.Get("/api/matches/{id}", match.GetOne(log, storage))
 	router.With(AuthMiddleware).Post("/api/match", match.New(log, storage))
 	router.Put("/api/matches/{id}/edit", match.Edit(log, storage))
+	router.Delete("/api/matches/{id}/delete", match.Delete(log, storage))
 	router.Post("/api/matches/{id}/approve", match.Approve(log, storage))
 	router.With(AuthMiddleware).Post("/api/parse_scrims", match.ParseMatches(log))
 

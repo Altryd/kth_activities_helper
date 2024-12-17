@@ -1,7 +1,7 @@
 package match
 
 import (
-	"github.com/go-chi/chi"
+	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/render"
 	"github.com/go-playground/validator/v10"
@@ -14,9 +14,13 @@ import (
 )
 
 type EditRequest struct {
-	TypeId     uint64    `json:"type_id" validate:"required,gte=0"`
-	Date       time.Time `json:"date" validate:"required,datetime"`
-	IsApproved bool      `json:"is_approved" validate:"required,bool"`
+	// TypeId     uint64    `json:"type_id" validate:"gte=0"`
+	FirstPlayerId     uint64    `json:"first_player_id" validate:"gte=0"`
+	FirstPlayerScore  uint64    `json:"first_player_score" validate:"gte=0"`
+	SecondPlayerId    uint64    `json:"second_player_id" validate:"gte=0"`
+	SecondPlayerScore uint64    `json:"second_player_score" validate:"gte=0"`
+	Date              time.Time `json:"date" validate:"datetime"`
+	// IsApproved bool      `json:"is_approved" validate:"bool"`
 }
 
 type EditResponse struct {
@@ -25,7 +29,8 @@ type EditResponse struct {
 }
 
 type MatchEditor interface {
-	EditMatch(matchId uint64, matchTypeId uint64, matchDate time.Time, isApproved bool) (models.Matches, error)
+	EditMatchScrim(matchId uint64, matchDate time.Time, firstPlayerId uint64,
+		firstPlayerScore uint64, secondPlayerId uint64, secondPlayerScore uint64) (models.Matches, error)
 }
 
 func Edit(log *slog.Logger, matchEditor MatchEditor) http.HandlerFunc {
@@ -59,7 +64,7 @@ func Edit(log *slog.Logger, matchEditor MatchEditor) http.HandlerFunc {
 			return
 		}
 
-		match, err := matchEditor.EditMatch(id, req.TypeId, req.Date, req.IsApproved)
+		match, err := matchEditor.EditMatchScrim(id, req.Date, req.FirstPlayerId, req.FirstPlayerScore, req.SecondPlayerId, req.SecondPlayerScore)
 		if err != nil {
 			localLog.Error("Failed to edit match", slog.String("error", err.Error()))
 			render.JSON(w, r, resp.Error("Failed to edit match"))
