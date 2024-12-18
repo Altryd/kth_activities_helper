@@ -4,7 +4,7 @@ import 'tailwindcss/tailwind.css';
 // discordId uint64, rating uint32, username string, active bool
 type User = {
     osu_id: number,
-    discord_id: number,
+    discord_id: string,
     rating: number, 
     username: string,
     active: boolean,
@@ -38,7 +38,7 @@ export default function UsersPage() {
     function transformUser(user: User) {
         return {
             // osu_id: user.osu_id,
-            discord_id: Number(user.discord_id),
+            discord_id: String(user.discord_id),
             rating: Number(user.rating),
             username: user.username,
             active: Boolean(Number(user.active)),

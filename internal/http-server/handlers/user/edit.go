@@ -13,7 +13,7 @@ import (
 )
 
 type EditRequest struct {
-	DiscordId uint64 `json:"discord_id" validate:"required,gte=0"`
+	DiscordId string `json:"discord_id" validate:"required,gte=0"`
 	Rating    uint32 `json:"rating" validate:"required,gte=0"`
 	Username  string `json:"username" validate:"required"`
 	Active    bool   `json:"active"`
@@ -62,8 +62,13 @@ func EditUser(log *slog.Logger, userEditor UserEditor) http.HandlerFunc {
 			render.JSON(w, r, resp.BadRequest("Failed to validate request"))
 			return
 		}
-
-		user, err := userEditor.EditUser(id, req.DiscordId, req.Rating, req.Username, req.Active)
+		discordIdUint64, err := strconv.ParseUint(req.DiscordId, 0, 64)
+		if err!= nil {
+			localLog.Error("Failed parse discordId to uint54", slog.String("error", err.Error()))
+			render.JSON(w, r, resp.Error("Failed parse discordId to uint54"))
+			return
+		}
+		user, err := userEditor.EditUser(id, discordIdUint64, req.Rating, req.Username, req.Active)
 		if err != nil {
 			localLog.Error("Failed to edit user", slog.String("error", err.Error()))
 			render.JSON(w, r, resp.Error("Failed to edit user"))
