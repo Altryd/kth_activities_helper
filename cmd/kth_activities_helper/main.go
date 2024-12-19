@@ -112,6 +112,8 @@ func main() {
 	router.Get("/api/oauth/osu", user.GetOsuCode(log, storage))
 
 	router.Post("/api/match_user", matchUser.New(log, storage))
+
+	router.Get("/api/logout", user.Logout(log))
 	matchTypes, err := storage.SelectMatchTypes()
 	if err != nil {
 		fmt.Printf("Error selecting match types: %v\n", err)

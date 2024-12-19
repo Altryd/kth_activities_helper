@@ -38,7 +38,7 @@ func GetOsuCode(log *slog.Logger, oneUserSelector UserSelectorCreator) http.Hand
 		// PART 0: GETTING CODE
 		var queryResults = r.URL.Query() // TODO : можно подумать над state, но как бы неважно пока что
 		if len(queryResults) != 2 {
-			http.Error(w, http.StatusText(400), 400) // TODO: redirect here
+			http.Redirect(w, r, "http://localhost:3000/users", 302)
 			return
 		}
 		var code = queryResults.Get("code")

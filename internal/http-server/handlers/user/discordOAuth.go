@@ -53,7 +53,8 @@ func GetDiscordCode(log *slog.Logger, userSelectorEditor UserSelectorEditor) htt
 		// PART 0: GETTING CODE
 		var queryResults = r.URL.Query()
 		if len(queryResults) != 1 {
-			http.Error(w, http.StatusText(400), 400)
+			// http.Error(w, http.StatusText(400), 400)
+			http.Redirect(w, r, "http://localhost:3000/users", 302)
 			return
 		}
 		var code = queryResults.Get("code")
@@ -86,7 +87,8 @@ func GetDiscordCode(log *slog.Logger, userSelectorEditor UserSelectorEditor) htt
 		json.Unmarshal(body, &dataRead) */
 		if err != nil {
 			localLog.Error("Something bad happened with post request", err)
-			http.Error(w, http.StatusText(500), 500)
+			// http.Error(w, http.StatusText(500), 500)
+			http.Redirect(w, r, "http://localhost:3000/users", 302)
 			return
 		}
 		defer response.Body.Close()
@@ -98,7 +100,8 @@ func GetDiscordCode(log *slog.Logger, userSelectorEditor UserSelectorEditor) htt
 		}
 		if response.StatusCode != 200 {
 			localLog.Error("Something bad when accessing ", slog.String(urlStr, "url"))
-			http.Error(w, http.StatusText(500), 500)
+			// http.Error(w, http.StatusText(500), 500)
+			http.Redirect(w, r, "http://localhost:3000/users", 302)
 			return
 		}
 
@@ -115,31 +118,37 @@ func GetDiscordCode(log *slog.Logger, userSelectorEditor UserSelectorEditor) htt
 		response, err = client.Do(req)
 		if err != nil {
 			localLog.Error("Something bad happened with GET request")
-			http.Error(w, http.StatusText(500), 500)
+			// http.Error(w, http.StatusText(500), 500)
+			http.Redirect(w, r, "http://localhost:3000/users", 302)
 			return
 		}
 		defer response.Body.Close()
 		body, _ = io.ReadAll(response.Body)
 		err = json.Unmarshal(body, &dataRead)
 		if err != nil {
-			http.Error(w, http.StatusText(500), 500)
+			// http.Error(w, http.StatusText(500), 500)
+			http.Redirect(w, r, "http://localhost:3000/users", 302)
 			return
 		}
 		if response.StatusCode != 200 {
 			localLog.Error("Something bad when accessing ", slog.String(urlStr, "url"))
-			http.Error(w, http.StatusText(500), 500)
+			// http.Error(w, http.StatusText(500), 500)
+			http.Redirect(w, r, "http://localhost:3000/users", 302)
 			return
 		}
 		discordId := dataRead["id"].(string)
 		discordIdUint, err := strconv.ParseUint(discordId, 10, 64)
 		if err != nil {
 			localLog.Error("Something bad happened with discordId")
+			http.Redirect(w, r, "http://localhost:3000/users", 302)
+			return
 		}
 		// username := dataRead["username"].(string)
 		user, err = userSelectorEditor.EditUser(user.OsuId, discordIdUint, user.Rating, user.Username, user.Active)
 		if err != nil {
 			localLog.Error("Something bad when editing user ", slog.String(discordId, "discordIdUint"))
 			http.Error(w, http.StatusText(500), 500)
+			http.Redirect(w, r, "http://localhost:3000/users", 302)
 			return
 		}
 
