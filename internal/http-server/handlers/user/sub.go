@@ -12,10 +12,6 @@ import (
 	"github.com/go-chi/render"
 )
 
-type SubscribeResponse struct {
-	resp.Response
-}
-
 func Subscribe(log *slog.Logger, storage *database.Storage) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const op = "handlers.user.Subscribe"
@@ -30,13 +26,19 @@ func Subscribe(log *slog.Logger, storage *database.Storage) http.HandlerFunc {
 			render.JSON(w, r, resp.Error("Failed to do discord OAuth"))
 			return
 		}
+
 		localLog.Info("props: ", props.OsuUserID, props.DiscordUserId)
 
 		discordID := props.DiscordUserId
+		osuID := props.OsuUserID
+
+		if err := storage.SubUser(osuID); err != nil {
+			localLog.Error("Failed to activate user", slog.String("error", err.Error()))
+			render.JSON(w, r, resp.Error("Failed to activate user"))
+			return
+		}
+
 		fmt.Println(discordID)
-		render.JSON(w, r, SubscribeResponse{
-			Response: resp.OK(),
-		})
-		return
+		render.JSON(w, r, resp.OK)
 	}
 }

@@ -475,3 +475,15 @@ func (storage *Storage) CreatePairs(r *http.Request) (Response, int, error) {
 
 	return response, http.StatusOK, nil
 }
+
+func (storage *Storage) SubUser(osuId uint64) error {
+	user := models.User{}
+	result := storage.db.Where("osu_id = ?", osuId).First(&user)
+	if result.Error != nil {
+		return result.Error
+	}
+
+	user.Active = true
+	result = storage.db.Save(&user)
+	return result.Error
+}
