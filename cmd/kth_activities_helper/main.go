@@ -123,6 +123,16 @@ func main() {
 			storage.CreateMatchType("weekly")
 		}
 	}
+	roles, err := storage.SelectRoles()
+	if err != nil {
+		fmt.Printf("Error selecting roles: %v\n", err)
+	} else {
+		if len(roles) == 0 {
+			storage.CreateRole("admin")
+			storage.CreateRole("user")
+			storage.CreateRole("volunteer")
+		}
+	}
 	err = utility.UploadPlayers("internal/database/golang_players_dump.json", storage, log)
 	if err != nil {
 		fmt.Printf("Error uploading players: %s, skipping", err)

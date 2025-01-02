@@ -20,6 +20,7 @@ type GetOneResponse struct {
 
 type OneUserSelector interface {
 	SelectOneUser(osuId uint64) (models.User, error)
+	SelectOneUserByUsername(username string) (models.User, error)
 }
 
 func GetOne(log *slog.Logger, oneUserSelector OneUserSelector) http.HandlerFunc {
@@ -29,11 +30,26 @@ func GetOne(log *slog.Logger, oneUserSelector OneUserSelector) http.HandlerFunc 
 			slog.String("op", op),
 			slog.String("request_id", middleware.GetReqID(r.Context())),
 		)
-		osuId := chi.URLParam(r, "osuId")
-		id, err := strconv.ParseUint(osuId, 10, 64)
+		userIdentifier := chi.URLParam(r, "osuId")
+		id, err := strconv.ParseUint(userIdentifier, 10, 64)
 		if err != nil {
-			http.Error(w, http.StatusText(400), 400)
+			user, err := oneUserSelector.SelectOneUserByUsername(userIdentifier)
+			if err != nil {
+				localLog.Error("Failed to select user", slog.String("error", err.Error()))
+				render.JSON(w, r, resp.Error("Failed to select user"))
+				return
+			}
+
+			localLog.Info("Selected user", slog.Uint64("user_id", user.OsuId))
+
+			render.JSON(w, r, GetOneResponse{
+				Response: resp.OK(),
+				User:     user,
+			})
 			return
+
+			// http.Error(w, http.StatusText(400), 400)
+			// return
 		}
 
 		user, err := oneUserSelector.SelectOneUser(id)

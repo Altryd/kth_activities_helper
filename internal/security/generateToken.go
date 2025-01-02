@@ -10,6 +10,7 @@ import (
 type Claims struct {
 	OsuUserID     uint64 `json:"osu_user_id"`
 	DiscordUserId uint64 `json:"discord_user_id"`
+	RoleName      string `json:"role_name"`
 	jwt.StandardClaims
 }
 
@@ -23,10 +24,15 @@ func GenerateToken(user *models.User, tokenType string) (string, error) {
 		expirationTime = time.Now().Add(time.Hour * 24 * 7).Unix() // expire in 7 days
 		subject = "refresh"
 	}
+	role := ""
+	if user.RoleId > 0 {
+		role = user.Role.Name
+	}
 
 	claims := &Claims{
 		OsuUserID:     user.OsuId,
 		DiscordUserId: user.DiscordId,
+		RoleName:      role,
 		StandardClaims: jwt.StandardClaims{
 			ExpiresAt: expirationTime,
 			Issuer:    "myapp",

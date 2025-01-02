@@ -36,7 +36,7 @@ func New(log *slog.Logger) (*Storage, error) {
 		log.Error("Failed to connect to database", err.Error())
 		return nil, err
 	}
-	err = db.AutoMigrate(&models.MatchType{}, &models.Matches{}, &models.User{}, &models.MatchUserScrim{})
+	err = db.AutoMigrate(&models.MatchType{}, &models.Matches{}, &models.User{}, &models.MatchUserScrim{}, &models.Role{})
 	if err != nil {
 		log.Error("Failed to auto migrate", err.Error())
 		return nil, err

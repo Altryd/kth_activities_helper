@@ -7,4 +7,6 @@ type User struct {
 	Username       string           `json:"username"`
 	Active         bool             `gorm:"default:false" json:"active"`
 	MatchUserScrim []MatchUserScrim `gorm:"foreignKey:PlayerId;references:OsuId"`
+	RoleId         int              `json:"role_id"`
+	Role           Role             `gorm:"foreignKey:RoleId" json:"role"`
 }

@@ -1,11 +1,13 @@
 package match
 
 import (
+	"fmt"
 	"github.com/Altryd/osuParseMpLinks"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/render"
 	resp "kth_activities_helper/internal/lib/response"
 	"kth_activities_helper/internal/models"
+	"kth_activities_helper/internal/security"
 	"log/slog"
 	"net/http"
 	"time"
@@ -50,9 +52,20 @@ func ParseMatches(log *slog.Logger) http.HandlerFunc {
 			slog.String("op", op),
 			slog.String("request_id", middleware.GetReqID(r.Context())),
 		)
-
+		fmt.Println("cookies:", r.Cookies())
 		var req []Line
 		err := render.DecodeJSON(r.Body, &req)
+		props, ok := r.Context().Value("props").(*security.Claims)
+		if !ok {
+			localLog.Error("Failed to get props from context")
+			render.JSON(w, r, resp.Error("Failed to parse matches because of context"))
+			return
+		}
+		if props.RoleName != "admin" && props.RoleName != "volunteer" {
+			r.Response.StatusCode = 403
+			render.JSON(w, r, resp.Error("Failed to decode request"))
+			return
+		}
 
 		if err != nil {
 			localLog.Error("Failed to decode request body")
