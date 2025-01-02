@@ -67,6 +67,26 @@ func (storage *Storage) CreateMatchType(matchTypeName string) (uint64, error) {
 	return matchTypeToCreate.ID, nil
 }
 
+// RoleRepository
+func (storage *Storage) SelectRoles() ([]models.Role, error) {
+	var roles []models.Role
+	result := storage.db.Find(&roles)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	return roles, nil
+}
+
+func (storage *Storage) CreateRole(roleName string) (int, error) {
+	roleToCreate := models.Role{Name: roleName}
+	result := storage.db.Create(&roleToCreate)
+	if result.Error != nil {
+		return 0, result.Error
+	}
+
+	return roleToCreate.ID, nil
+}
+
 //MatchRepository
 
 func (storage *Storage) SelectMatches() ([]models.Matches, error) {
@@ -265,7 +285,11 @@ func (storage *Storage) SelectOneUser(osuId uint64) (models.User, error) {
 
 func (storage *Storage) SelectOneUserByUsername(username string) (models.User, error) {
 	user := models.User{}
-	result := storage.db.Preload("MatchUserScrim").Where(models.User{Username: username}).First(&user)
+	username_lower := strings.ToLower(username)
+	if len(username_lower) == 0 {
+		return models.User{}, errors.New("username is empty")
+	}
+	result := storage.db.Preload("MatchUserScrim").Take(&user, "lower(username) = lower(?)", username_lower)
 	if result.Error != nil {
 		return models.User{}, result.Error
 	}
