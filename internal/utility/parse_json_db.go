@@ -35,7 +35,7 @@ func UploadPlayers(pathToJson string, storage *database.Storage, log *slog.Logge
 	// fmt.Print(userDataList)
 	for _, userData := range userDataList {
 		osuId, err := storage.CreateUser(userData.OsuId, userData.DiscordId, userData.Rating,
-			userData.Username, userData.Active)
+			userData.Username, userData.Active, userData.RoleId)
 		// fmt.Println(osuId, err)
 		if err != nil {
 			log.Error(fmt.Sprintf("Failed to create user with id=%d", userData.OsuId))

@@ -77,6 +77,20 @@ func (storage *Storage) SelectRoles() ([]models.Role, error) {
 	return roles, nil
 }
 
+func (storage *Storage) SelectRoleByName(name string) (models.Role, error) {
+	var role models.Role
+	if len(name) == 0 {
+		return models.Role{}, errors.New("role name is empty!")
+	}
+
+	result := storage.db.Take(&role, "name = ?", name)
+	if result.Error != nil {
+		return role, result.Error
+	}
+
+	return role, nil
+}
+
 func (storage *Storage) CreateRole(roleName string) (int, error) {
 	roleToCreate := models.Role{Name: roleName}
 	result := storage.db.Create(&roleToCreate)
@@ -296,8 +310,8 @@ func (storage *Storage) SelectOneUserByUsername(username string) (models.User, e
 	return user, nil
 }
 
-func (storage *Storage) CreateUser(osuId uint64, discordId uint64, rating uint32, username string, active bool) (uint64, error) {
-	userToCreate := models.User{OsuId: osuId, DiscordId: discordId, Rating: rating, Username: username, Active: active}
+func (storage *Storage) CreateUser(osuId uint64, discordId uint64, rating uint32, username string, active bool, roleId int) (uint64, error) {
+	userToCreate := models.User{OsuId: osuId, DiscordId: discordId, Rating: rating, Username: username, Active: active, RoleId: roleId}
 	result := storage.db.Create(&userToCreate)
 	if result.Error != nil {
 		return 0, result.Error

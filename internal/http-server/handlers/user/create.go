@@ -5,6 +5,7 @@ import (
 	"github.com/go-chi/render"
 	"github.com/go-playground/validator/v10"
 	resp "kth_activities_helper/internal/lib/response"
+	"kth_activities_helper/internal/models"
 	"log/slog"
 	"net/http"
 )
@@ -23,7 +24,8 @@ type CreateResponse struct {
 }
 
 type UserCreator interface {
-	CreateUser(osuId uint64, discordId uint64, rating uint32, username string, active bool) (uint64, error)
+	CreateUser(osuId uint64, discordId uint64, rating uint32, username string, active bool, roleId int) (uint64, error)
+	SelectRoleByName(Name string) (models.Role, error)
 }
 
 func New(log *slog.Logger, userCreator UserCreator) http.HandlerFunc {
@@ -50,7 +52,17 @@ func New(log *slog.Logger, userCreator UserCreator) http.HandlerFunc {
 			return
 		}
 
-		id, err := userCreator.CreateUser(req.OsuId, req.DiscordId, req.Rating, req.Username, req.Active)
+		role, err := userCreator.SelectRoleByName("user")
+		if err != nil {
+			localLog.Error("Failed to find role", slog.String("error", err.Error()))
+			render.JSON(w, r, resp.Error("Role not found"))
+			return
+		}
+
+		// final ID
+		roleID := role.ID
+
+		id, err := userCreator.CreateUser(req.OsuId, req.DiscordId, req.Rating, req.Username, req.Active, roleID)
 		if err != nil {
 			localLog.Error("Failed to create user", slog.String("error", err.Error()))
 			render.JSON(w, r, resp.Error("Failed to create match"))

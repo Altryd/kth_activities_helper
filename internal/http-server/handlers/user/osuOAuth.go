@@ -25,7 +25,8 @@ type OsuOAuthResponse struct {
 
 type UserSelectorCreator interface {
 	SelectOneUser(osuId uint64) (models.User, error)
-	CreateUser(osuId uint64, discordId uint64, rating uint32, username string, active bool) (uint64, error)
+	SelectRoleByName(Name string) (models.Role, error)
+	CreateUser(osuId uint64, discordId uint64, rating uint32, username string, active bool, roleId int) (uint64, error)
 }
 
 func GetOsuCode(log *slog.Logger, oneUserSelector UserSelectorCreator) http.HandlerFunc {
@@ -127,8 +128,19 @@ func GetOsuCode(log *slog.Logger, oneUserSelector UserSelectorCreator) http.Hand
 
 		var idInDatabase uint64 = 0
 		user, err := oneUserSelector.SelectOneUser(id)
+
 		if err != nil {
-			id_, err := oneUserSelector.CreateUser(id, 0, 0, username, false)
+			role, err := oneUserSelector.SelectRoleByName("user")
+			if err != nil {
+				localLog.Error("Failed to find role", slog.String("error", err.Error()))
+				render.JSON(w, r, resp.Error("Role not found"))
+				return
+			}
+
+			// final ID
+			roleID := role.ID
+
+			id_, err := oneUserSelector.CreateUser(id, 0, 0, username, false, roleID)
 			if err != nil {
 				localLog.Error("Failed to create user", slog.String("error", err.Error()))
 				render.JSON(w, r, resp.Error("Failed to create match"))
