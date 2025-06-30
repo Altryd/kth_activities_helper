@@ -1,49 +1,37 @@
-from sqlalchemy import ForeignKey
-from sqlalchemy import String, Integer, Boolean, BigInteger
-from sqlalchemy.orm import DeclarativeBase
-from sqlalchemy.orm import Mapped
-from sqlalchemy.orm import mapped_column
-from sqlalchemy.orm import registry
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy import create_engine
+from sqlalchemy import Column, Integer, String, Text, ForeignKey, Enum, Boolean, BigInteger
 from sqlalchemy.orm import relationship
-
-mapper_registry = registry()
-
-
-class Base(DeclarativeBase):
-    pass
+from sqlalchemy.ext.declarative import declarative_base
+import enum
+from app.config import Config
 
 
-class MyMixin(Base):
-    __abstract__ = True
+Base = declarative_base()
 
-    def to_dict(self):
-        return dict((col, getattr(self, col))
-                    for col in self.__table__.columns)
+
+class Role(enum.Enum):
+    user = "user"
+    assistant = "assistant"
+    system = "system"
 
 
 class Matches(Base):
     __tablename__ = "matches"
-    id = mapped_column(
-        BigInteger,
-        unique=True,
-        primary_key=True,
-        autoincrement=False)
-    first_player_id = mapped_column(
-        BigInteger,
-        ForeignKey("player.osu_id"),
-        nullable=False)
-    first_player_score = mapped_column(Integer, nullable=False)
+    id = Column(BigInteger, unique=True, primary_key=True, autoincrement=False)
+    first_player_id = Column(BigInteger, ForeignKey("player.osu_id"), nullable=False)
+    first_player_score = Column(Integer, nullable=False)
     first_player = relationship(
         "Player", primaryjoin="(Player.osu_id == Matches.first_player_id)")
-    second_player_id = mapped_column(
+    second_player_id = Column(
         BigInteger,
         ForeignKey("player.osu_id"),
         nullable=False)
-    second_player_score = mapped_column(Integer, nullable=False)
+    second_player_score = Column(Integer, nullable=False)
     second_player = relationship(
         "Player", primaryjoin="(Player.osu_id == Matches.second_player_id)")
-    is_approved = mapped_column(Boolean, nullable=False, default=False)
-    server: Mapped[str] = mapped_column(String(32))
+    is_approved = Column(Boolean, nullable=False, default=False)
+    server = Column(String(32), default="banco", nullable=True)
 
     def __init__(
             self,
@@ -66,12 +54,13 @@ class Matches(Base):
 
 class Player(Base):
     __tablename__ = "player"
-    osu_id: Mapped[int] = mapped_column(
-        BigInteger, primary_key=True, autoincrement=False)
-    nickname: Mapped[str] = mapped_column(String(32))
-    rating: Mapped[int] = mapped_column(Integer, nullable=True)
-    discord_id: Mapped[str] = mapped_column(String(32), unique=True)
-    active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    osu_id = Column(BigInteger, primary_key=True, autoincrement=True)
+    nickname = Column(String(64), nullable=False, unique=True)
+    rating = Column(Integer, default=0, nullable=True)
+    discord_id = Column(String(32), unique=True, nullable=True)
+    active = Column(Boolean, default=True, nullable=False)
+    is_deleted = Column(Boolean, default=False, nullable=False)
+    # TODO: roles ?
 
     left_nodes = relationship(
         "Matches", primaryjoin=osu_id == Matches.first_player_id)

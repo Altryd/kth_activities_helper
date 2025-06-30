@@ -29,28 +29,30 @@ def serialize_match_to_json(match):
         "is_approved": match.is_approved}
 
 
-def get_new_rating(r0, opponents_rating, wins_first, wins_opponent, k=35):
+def get_new_rating(initial_rating, opponent_rating, player_wins, opponent_wins, k=35):
     """
 
-    :param r0: старый рейтинг
-    :param opponents_rating: рейтинг оппонента
-    :param wins_first: кол-во побед первого игрока
-    :param wins_opponent: кол-во побед оппонента
-    :param k: коэф.значимости матча, по умолчанию = 20
-    :return:
+    :param initial_rating: старый рейтинг
+    :param opponent_rating: рейтинг оппонента
+    :param player_wins: кол-во побед первого игрока
+    :param opponent_wins: кол-во побед оппонента
+    :param k: коэф.значимости матча, по умолчанию = 35
+    :return: Новый рейтинг игрока после матча
     """
-    G = get_g(wins_first, wins_opponent)
-    W = 0.5
-    if wins_first > wins_opponent:
-        W = 1
-    elif wins_first < wins_opponent:
-        W = 0
-    We = get_we(r0, opponents_rating)
-    return r0 + k * G * (W - We)
+    match_weight = get_g(player_wins, opponent_wins)
+    result = 0.5
+    if player_wins > opponent_wins:
+        result = 1
+    elif player_wins < opponent_wins:
+        result = 0
+    expected_result = get_we(initial_rating, opponent_rating)
+    return initial_rating + k * match_weight * (result - expected_result)
 
 
-def get_g(wins_first, wins_second):
-    difference = wins_first - wins_second
+def get_g(player_wins, opponent_wins):
+    if player_wins < 0 or opponent_wins < 0:
+        raise ValueError("Number of wins cannot be negative")
+    difference = player_wins - opponent_wins
     if abs(difference) <= 1:
         return 1
     elif abs(difference) == 2:
@@ -59,8 +61,8 @@ def get_g(wins_first, wins_second):
         return (11 + abs(difference)) / 8
 
 
-def get_we(rating_first, rating_second):
-    dr = rating_first - rating_second
+def get_we(player_rating, opponent_rating):
+    dr = player_rating - opponent_rating
     denominator = 10**(-dr / 400) + 1
     return 1 / denominator
 
