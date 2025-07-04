@@ -1,6 +1,5 @@
 # uvicorn app.main:app --host localhost --port 8000 --reload
-import redis
-from fastapi import FastAPI, HTTPException, Depends
+from fastapi import FastAPI, HTTPException, Depends, UploadFile, File
 import os
 from typing import Optional, List
 from sqlalchemy.orm import Session, aliased
@@ -22,7 +21,9 @@ load_dotenv()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    logger.info("Starting application")
     yield
+    logger.info("Shutting down application")
 
 app = FastAPI(title="osu! AI Agent", lifespan=lifespan)
 # app.mount("/frontend", StaticFiles(directory="frontend"),
@@ -38,8 +39,17 @@ app.add_middleware(
 logger = get_logger(__name__)
 
 
-@app.get("/show_matches")
-def show_matches(db: Session = Depends(get_db), response_model=List[UpdatedMatch]):
+@app.post("add_players_from_forms_csv")
+async def add_players_to_db(file: UploadFile = File(...), db: Session = Depends(get_db)):
+    try:
+        logger.info("Starting bulk player import")
+    except Exception as e:
+        logger.error(f"Error in add_players_to_db: {e}")
+        raise HTTPException(status_code=500, detail=f"Error in add_players_to_db: {str(e)}")
+
+
+@app.get("/show_matches", response_model=List[UpdatedMatch])
+def show_matches(db: Session = Depends(get_db)):
     try:
         playeralias = aliased(Player)
         stmt = (
@@ -97,6 +107,7 @@ def show_matches(db: Session = Depends(get_db), response_model=List[UpdatedMatch
             raise HTTPException(status_code=404, detail="No matches found")
         return matches
     except Exception as e:
+        logger.error(f"Error in show matches: {e}")
         raise HTTPException(status_code=500, detail=f"Error in show matches: {str(e)}")
 
 

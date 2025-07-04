@@ -18,6 +18,10 @@ class Role(enum.Enum):
 
 class Matches(Base):
     __tablename__ = "matches"
+    __table_args__ = (
+        Index("idx_first_player_id", "first_player_id"),
+        Index("idx_second_player_id", "second_player_id"),
+    )
     id = Column(BigInteger, unique=True, primary_key=True, autoincrement=False)
     first_player_id = Column(BigInteger, ForeignKey("players.osu_id"), nullable=False)
     first_player_score = Column(Integer, nullable=False)
