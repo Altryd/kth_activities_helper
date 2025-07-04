@@ -1,5 +1,3 @@
-from flask import Flask
-from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import create_engine
 from app.config import Config
 from app.models import Base, Player, Matches

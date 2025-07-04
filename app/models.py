@@ -19,13 +19,13 @@ class Role(enum.Enum):
 class Matches(Base):
     __tablename__ = "matches"
     id = Column(BigInteger, unique=True, primary_key=True, autoincrement=False)
-    first_player_id = Column(BigInteger, ForeignKey("player.osu_id"), nullable=False)
+    first_player_id = Column(BigInteger, ForeignKey("players.osu_id"), nullable=False)
     first_player_score = Column(Integer, nullable=False)
     first_player = relationship("Player", foreign_keys=[first_player_id])
     # first_player = relationship("Player", primaryjoin="(Player.osu_id == Matches.first_player_id)")
     second_player_id = Column(
         BigInteger,
-        ForeignKey("player.osu_id"),
+        ForeignKey("players.osu_id"),
         nullable=False)
     second_player_score = Column(Integer, nullable=False)
     # second_player = relationship("Player", primaryjoin="(Player.osu_id == Matches.second_player_id)")
