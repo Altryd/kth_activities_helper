@@ -1,0 +1,13 @@
+aiohttp
+pytest
+pytest-asyncio
+ossapi
+python-dotenv
+pydantic_settings
+sqlalchemy
+fastapi
+asyncmy
+cryptography
+uvicorn
+python-multipart
+pyjwt

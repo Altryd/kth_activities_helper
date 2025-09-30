@@ -1,6 +1,6 @@
 # tests/test_models.py
 import pytest
-from backend.models import User, Match, Role# , MatchStatus
+from backend.database import User, Match, Role  # , MatchStatus
 from backend.database import async_session, reset_db, get_db, async_engine
 from sqlalchemy.ext.asyncio import AsyncSession
 
