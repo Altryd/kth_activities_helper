@@ -7,7 +7,7 @@ from sqlalchemy.orm import selectinload
 from backend.database import User, get_db
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, desc
-from get_logger import logger
+from backend.get_logger import logger
 from datetime import datetime, timedelta
 
 router = APIRouter()

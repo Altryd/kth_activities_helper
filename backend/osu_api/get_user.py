@@ -2,7 +2,8 @@ from typing import List
 
 from ossapi import OssapiAsync, User, UserCompact
 from fastapi import HTTPException
-from get_logger import logger
+from backend.get_logger import logger
+
 
 async def get_user(id_or_username: str | int, osu_api: OssapiAsync) -> User | None:
     """
