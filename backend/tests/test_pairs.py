@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 
 @pytest.mark.asyncio
 async def test_pairs():
-    response = requests.post(f"http://localhost:8101/create_pairs",
+    response = requests.post(f"http://{settings.SERVER_HOST}:{settings.SERVER_PORT}/create_pairs",
                              json={"temporary_used_players": [],
                                    "pairs_correction": []})
     print(response.json())

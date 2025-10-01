@@ -7,6 +7,9 @@ from pathlib import Path
 # Определяем путь к .env относительно корня проекта
 BASE_DIR = Path(__file__).resolve().parent  # Корневая директория проекта
 ENV_FILE = BASE_DIR / ".env"
+if not os.path.exists(ENV_FILE):
+    BASE_DIR = Path(__file__).resolve().parent.parent  # Корневая директория проекта
+    ENV_FILE = BASE_DIR / ".env"
 
 
 class Settings(BaseSettings):
@@ -20,8 +23,8 @@ class Settings(BaseSettings):
     MYSQL_IP: str
     JWT_SECRET: str
     BOT_API_KEY: str
-    UVICORN_PORT: int
-    UVICORN_HOST: str
+    SERVER_PORT: int
+    SERVER_HOST: str
 
     @property
     def async_database_url(self) -> str:
@@ -30,6 +33,7 @@ class Settings(BaseSettings):
     class Config:
         env_file = ENV_FILE
         env_file_encoding = "utf-8"
+
 
 settings = Settings()
 OSU_API_ASYNC = OssapiAsync(settings.OSU_CLIENT_ID, settings.OSU_CLIENT_SECRET)

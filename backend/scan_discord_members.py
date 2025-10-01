@@ -10,7 +10,7 @@ from fastapi import HTTPException
 
 
 async def main():
-    with open("discord_members.csv", "rb") as fp:
+    with open("data_files/discord_members.csv", "rb") as fp:
         content = fp.read()
         content_str = content.decode('utf-8')
         csv_reader = DictReader(StringIO(content_str))
@@ -50,7 +50,7 @@ async def main():
     print(f"not found: {not_found}\n\n")
     print(f"found: {found}")
     headers = ["username", "discord_id", "osu_id", "pp", "display_name"]
-    with open("result_2309.csv", "w", newline="", encoding='utf-8') as f:
+    with open("data_files/result_2309.csv", "w", newline="", encoding='utf-8') as f:
         writer = csv.DictWriter(f, headers)
         writer.writeheader()
         writer.writerows(found)
@@ -58,7 +58,7 @@ async def main():
 
 
 async def get_usernames():
-    with open("players_to_add.csv", "rb") as fp:
+    with open("data_files/players_to_add.csv", "rb") as fp:
         content = fp.read()
         content_str = content.decode('utf-8')
         csv_reader = DictReader(StringIO(content_str))
@@ -115,7 +115,7 @@ class RatingNormalizer:
 
 
 async def scan_ratings():
-    with open("ratings.csv", "rb") as fp:
+    with open("data_files/ratings.csv", "rb") as fp:
         content = fp.read()
         content_str = content.decode('utf-8')
         csv_reader = DictReader(StringIO(content_str))
@@ -128,7 +128,7 @@ async def scan_ratings():
         users.append({"username": row['username'], "rating": row['rating'], "sr": row['sr'],
                       "normalized_rating": normalized_rating})
     headers = ["username", "rating", "sr", "normalized_rating"]
-    with open("result_rating.csv", "w", newline="", encoding='utf-8') as f:
+    with open("data_files/result_rating.csv", "w", newline="", encoding='utf-8') as f:
         writer = csv.DictWriter(f, headers)
         writer.writeheader()
         writer.writerows(users)

@@ -96,4 +96,4 @@ if __name__ == "__main__":
     app.include_router(pairs.router)
     app.include_router(admin.admin_router)
     app.include_router(user.router)
-    uvicorn.run(app, host=settings.UVICORN_HOST, port=settings.UVICORN_PORT)
+    uvicorn.run(app, host=settings.SERVER_HOST, port=settings.SERVER_PORT)

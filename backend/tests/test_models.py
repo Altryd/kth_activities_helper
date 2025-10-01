@@ -5,7 +5,7 @@ from backend.database import async_session, reset_db, get_db, async_engine
 from sqlalchemy.ext.asyncio import AsyncSession
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture(scope="function")  # TODO: this is very bad !!
 async def db():
     await reset_db()  # Очищаем базу перед каждым тестом
     async with async_session() as session:
