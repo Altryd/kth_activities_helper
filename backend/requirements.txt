@@ -1,3 +1,4 @@
+aiosqlite
 aiohttp
 pytest
 pytest-asyncio
@@ -11,3 +12,5 @@ cryptography
 uvicorn
 python-multipart
 pyjwt
+pytest-cov
+discord.py

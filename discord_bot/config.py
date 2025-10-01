@@ -13,22 +13,8 @@ if not os.path.exists(ENV_FILE):
 
 
 class Settings(BaseSettings):
-    OSU_CLIENT_ID: int
-    OSU_CLIENT_SECRET: str
-    MYSQL_USER: str
-    MYSQL_PASSWORD: str
-    MYSQL_ROOT_PASSWORD: str
-    MYSQL_DATABASE: str
-    MYSQL_PORT: int
-    MYSQL_IP: str
-    JWT_SECRET: str
+    DISCORD_KTH_TOKEN: str
     BOT_API_KEY: str
-    SERVER_PORT: int
-    SERVER_HOST: str
-
-    @property
-    def async_database_url(self) -> str:
-        return f"mysql+asyncmy://{self.MYSQL_USER}:{self.MYSQL_PASSWORD}@{self.MYSQL_IP}:{self.MYSQL_PORT}/{self.MYSQL_DATABASE}"
 
     class Config:
         env_file = ENV_FILE
