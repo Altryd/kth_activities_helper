@@ -21,7 +21,8 @@ class RegisterRequest(BaseModel):
 @router.post("/register")
 async def register_user(
     request: RegisterRequest,
-    auth_info: Optional[dict] = Depends(verify_auth)
+    auth_info: Optional[dict] = Depends(verify_auth),
+    db: AsyncSession = Depends(get_db)
 ):
     # Если посылается с фронтенда - тогда нужно в JWT проверять. Если же с бота - тогда просто по апи ключу..
     user_id = None
@@ -31,7 +32,7 @@ async def register_user(
         user_id = request.discord_id
         player_query = (
             select(User)
-            .where(User.osu_id == user_id)  # TODO: hz ??
+            .where(User.discord_id == user_id)
             .options(
                 selectinload(User.matches_as_player1),
                 selectinload(User.matches_as_player2)
@@ -54,19 +55,12 @@ async def register_user(
     player = (await db.execute(player_query)).scalars().first()
     if not player:
         raise HTTPException(status_code=404, detail="User not found")
-    # Проверяем JWT (для сайта)
-    """
-    jwt_user_id = verify_jwt(authorization)
-    if jwt_user_id:
-        user_id = jwt_user_id
-    # Проверяем API-ключ бота
-    elif verify_bot_api_key(authorization):
-        if not request.discord_id:
-            raise HTTPException(status_code=400, detail="Discord ID required for bot authentication")
-        user_id = request.discord_id
-    else:
-        raise HTTPException(status_code=401, detail="Invalid authentication")
-    """
+    try:
+        player.active = True
+        await db.commit()
+    except BaseException as ex:    # TODO: add more exceptions
+        await db.rollback()
+        raise HTTPException(status_code=500, detail="Error")
 
     # Здесь логика регистрации в базе данных
     # Например, сохраняем user_id (или discord_id) в таблицу registered_events

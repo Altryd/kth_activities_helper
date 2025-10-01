@@ -1,4 +1,3 @@
-from dotenv import load_dotenv
 import discord
 from discord import app_commands
 from discord.ext import commands
@@ -8,24 +7,20 @@ from io import StringIO, BytesIO
 import os
 from get_logger import logger
 import requests
+from config import settings
 
 
-load_dotenv()
-DISCORD_KTH_TOKEN = os.getenv('DISCORD_KTH_TOKEN')  # red_pixel
-BOT_API_KEY = os.getenv('BOT_API_KEY')
-
-
-# Настройка intents
+# intents
 intents = discord.Intents.default()
-intents.members = True  # Для доступа к guild.members
-intents.message_content = True  # Для чтения сообщений
+intents.members = True  # доступ к guild.members
+intents.message_content = True  # чтение сообщений
 
 bot = commands.Bot(command_prefix='!', intents=intents)
 
 
 def get_auth_headers():
     return {
-        "Authorization": f"Bearer {BOT_API_KEY}",
+        "Authorization": f"Bearer {settings.BOT_API_KEY}",
         "Content-Type": "application/json"
     }
 
@@ -42,39 +37,48 @@ async def on_ready():
         logger.error(f"Ошибка синхронизации команд: {e}")
 
 
+def get_embed_for_userinfo(user_data: dict) -> discord.Embed:
+    # Embed для красивого вывода
+    embed = discord.Embed(
+        title=f"osu! Profile: {user_data['username']}",
+        color=discord.Color.blue(),  # Цвет рамки (можно настроить)
+        url=f"https://osu.ppy.sh/users/{user_data['osu_id']}"  # Ссылка на профиль osu!
+    )
+
+    # аватар
+    embed.set_thumbnail(url=f"https://a.ppy.sh/{user_data['osu_id']}")
+
+    # поля с информацией
+    embed.add_field(name="Osu! ID", value=user_data['osu_id'], inline=False)
+    # embed.add_field(name="Discord ID", value=user_data['discord_id'] or "Not linked", inline=True)
+    embed.add_field(name="PP", value=f"{user_data['pp']:.2f}", inline=False)
+    embed.add_field(name="Elo Rating", value=f"{user_data['elo_rating']:.2f}", inline=False)
+    # embed.add_field(name="Role", value=user_data['role'].capitalize(), inline=True)
+    embed.add_field(name="Matches Played", value=len(user_data['matches']), inline=False)
+
+    active_value = ":red_circle: The player is inactive in scrims"
+    if user_data['active']:
+        active_value = ":green_circle: The player is active in scrims"
+    embed.add_field(name="Activity:", value=active_value, inline=False)
+
+    # Добавляем футер (опционально)
+    embed.set_footer(text="4unc Ky")
+    return embed
+
+
 @bot.tree.command(name="userinfo_id", description="Get information about an osu! user by ID")
 @app_commands.describe(userid="The osu! ID of the user")
 @app_commands.rename(userid='user_id')
 async def userinfo_id(interaction: discord.Interaction, userid: int):
     await interaction.response.defer()
     try:
-        response = requests.get(f"http://localhost:8101/user/id/{userid}",  # TODO !!
+        response = requests.get(f"{settings.SERVER_PROTOCOL}://{settings.SERVER_HOST}:{settings.SERVER_PORT}/user/id/{userid}",  # TODO !!
                                 headers=get_auth_headers())
-        response.raise_for_status()  # Проверяем, успешен ли запрос
+        response.raise_for_status()
         user_data = response.json()
 
-        # Embed для красивого вывода
-        embed = discord.Embed(
-            title=f"osu! Profile: {user_data['username']}",
-            color=discord.Color.blue(),  # Цвет рамки (можно настроить)
-            url=f"https://osu.ppy.sh/users/{user_data['osu_id']}"  # Ссылка на профиль osu!
-        )
+        embed = get_embed_for_userinfo(user_data)  # составляем ембед
 
-        # аватар
-        embed.set_thumbnail(url=f"https://a.ppy.sh/{user_data['osu_id']}")
-
-        # поля с информацией
-        embed.add_field(name="Osu! ID", value=user_data['osu_id'], inline=False)
-        # embed.add_field(name="Discord ID", value=user_data['discord_id'] or "Not linked", inline=True)
-        embed.add_field(name="PP", value=f"{user_data['pp']:.2f}", inline=False)
-        embed.add_field(name="Elo Rating", value=f"{user_data['elo_rating']:.2f}", inline=False)
-        # embed.add_field(name="Role", value=user_data['role'].capitalize(), inline=True)
-        embed.add_field(name="Matches Played", value=len(user_data['matches']), inline=False)
-
-        # Добавляем футер (опционально)
-        embed.set_footer(text="4unc Ky")
-
-        # Отправляем Embed
         await interaction.followup.send(embed=embed)
 
     except requests.exceptions.HTTPError as http_err:
@@ -104,33 +108,12 @@ async def userinfo_id(interaction: discord.Interaction, userid: int):
 async def userinfo(interaction: discord.Interaction, username: str):
     await interaction.response.defer()
     try:
-        response = requests.get(f"http://localhost:8101/user/username/{username}",
+        response = requests.get(f"{settings.SERVER_PROTOCOL}://{settings.SERVER_HOST}:{settings.SERVER_PORT}/user/username/{username}",
                                 headers=get_auth_headers())
-        response.raise_for_status()  # Проверяем, успешен ли запрос
+        response.raise_for_status()
         user_data = response.json()
+        embed = get_embed_for_userinfo(user_data)  # составляем эмбед
 
-        # Embed для красивого вывода
-        embed = discord.Embed(
-            title=f"osu! Profile: {user_data['username']}",
-            color=discord.Color.blue(),  # Цвет рамки (можно настроить)
-            url=f"https://osu.ppy.sh/users/{user_data['osu_id']}"  # Ссылка на профиль osu!
-        )
-
-        # аватар
-        embed.set_thumbnail(url=f"https://a.ppy.sh/{user_data['osu_id']}")
-
-        # поля с информацией
-        embed.add_field(name="Osu! ID", value=user_data['osu_id'], inline=False)
-        # embed.add_field(name="Discord ID", value=user_data['discord_id'] or "Not linked", inline=True)
-        embed.add_field(name="PP", value=f"{user_data['pp']:.2f}", inline=False)
-        embed.add_field(name="Elo Rating", value=f"{user_data['elo_rating']:.2f}", inline=False)
-        # embed.add_field(name="Role", value=user_data['role'].capitalize(), inline=True)
-        embed.add_field(name="Matches Played", value=len(user_data['matches']), inline=False)
-
-        # Добавляем футер (опционально)
-        embed.set_footer(text="4unc Ky")
-
-        # Отправляем Embed
         await interaction.followup.send(embed=embed)
 
     except requests.exceptions.HTTPError as http_err:
@@ -154,6 +137,41 @@ async def userinfo(interaction: discord.Interaction, username: str):
             ephemeral=False
         )
 
-# Запуск бота
-# bot.run(os.getenv('DISCORD_BOT_TOKEN'))
-bot.run(DISCORD_KTH_TOKEN)  # Твой токен бота
+
+@bot.tree.command(name="register", description="Register in scrims")
+async def userinfo(interaction: discord.Interaction):
+    await interaction.response.defer()
+    try:
+        response = requests.post(f"{settings.SERVER_PROTOCOL}://{settings.SERVER_HOST}:{settings.SERVER_PORT}/register",
+                                 headers=get_auth_headers(),
+                                 json={"discord_id": str(interaction.user.id)})
+        response.raise_for_status()
+        user_data = response.json()
+        # embed = get_embed_for_userinfo(user_data)  # составляем эмбед
+        # await interaction.followup.send(f"Your discord_id is {interaction.user.id}")
+        await interaction.followup.send("All good :white_check_mark:")  # TODO add more information
+
+
+    except requests.exceptions.HTTPError as http_err:  # TODO: check with lines
+        # Обработка ошибок API (например, 404 - пользователь не найден)
+        # error_message = response.json().get("detail", "Unknown error")
+        await interaction.followup.send(
+            # f"Ошибка: {error_message} (Status code: {response.status_code})",
+            f"Пользователь не найден :pleading_face:",
+            ephemeral=False  # Сообщение видно только пользователю
+        )
+    except requests.exceptions.RequestException as req_err:
+        # Обработка сетевых ошибок
+        await interaction.followup.send(
+            "Ошибка: Не удалось подключиться к серверу. Попробуйте позже.",
+            ephemeral=False
+        )
+    except KeyError as key_err:
+        # Обработка ошибок, если данные от API имеют неожиданный формат
+        await interaction.followup.send(
+            "Ошибка: Неверный формат данных от сервера.",
+            ephemeral=False
+        )
+
+# запуск бота
+bot.run(settings.DISCORD_KTH_TOKEN)

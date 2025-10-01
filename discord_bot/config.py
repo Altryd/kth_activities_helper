@@ -15,6 +15,9 @@ if not os.path.exists(ENV_FILE):
 class Settings(BaseSettings):
     DISCORD_KTH_TOKEN: str
     BOT_API_KEY: str
+    SERVER_PORT: str
+    SERVER_HOST: str
+    SERVER_PROTOCOL: str
 
     class Config:
         env_file = ENV_FILE
@@ -23,4 +26,4 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
-OSU_API_ASYNC = OssapiAsync(settings.OSU_CLIENT_ID, settings.OSU_CLIENT_SECRET)
+# OSU_API_ASYNC = OssapiAsync(settings.OSU_CLIENT_ID, settings.OSU_CLIENT_SECRET)
