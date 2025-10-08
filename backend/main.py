@@ -2,13 +2,13 @@
 from fastapi import FastAPI, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List
-from config import settings
-from database import init_db, get_db
+from .config import settings
+from .database import init_db, get_db
 from backend.database import User, Match, Role  # ,  MatchStatus
 from backend.osu_api.get_user import get_users
 from backend.models import UserDTO, MatchResult
 from contextlib import asynccontextmanager
-from routes import pairs, admin, user
+from .routes import pairs, admin, user
 
 
 # @app.on_event("startup")
