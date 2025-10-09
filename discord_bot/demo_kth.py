@@ -12,6 +12,7 @@ import requests
 from config import settings
 import random
 from datetime import timedelta
+from typing import Optional
 
 
 # intents
@@ -22,6 +23,7 @@ intents.message_content = True  # чтение сообщений
 bot = commands.Bot(command_prefix='!', intents=intents)
 
 ROLE_X_ID = 630752620864339989
+BOTS_COMMAND_ID = 592501141552627722
 BASE_MUTE_CHANCE = 50  # базовый порог мута
 OVERKILL = 85
 CHANCE_INCREASE_PER_STREAK = 5  # +% шанса за каждый streak
@@ -192,6 +194,50 @@ ROLE_REMOVED_GIF = os.path.join(GIF_FOLDER, "suigintou-happy.gif")
 SURVIVED_GIF = os.path.join(GIF_FOLDER, "suigintou-rozen-maiden-tease.gif")
 MUTED_GIF = os.path.join(GIF_FOLDER, "rozen-maiden-suiguintou-muted.gif")
 SAMARA_GIF = os.path.join(GIF_FOLDER, "samara-flag-waving.gif")
+DODEP_GIF = os.path.join(GIF_FOLDER, "dodep.gif")
+samara_emoji = "<:samara:1416124739981938709>"
+skolen_emoji = "<:skolen:541635738182090767>"
+
+
+async def get_timeout_and_message(roll, mute_chance: int, mute_minutes: int) -> tuple[str, Optional[discord.File], Optional[int]]:
+    if roll == 63:
+
+        string_to_show = f"Выпало {roll}! Ты в му..Погоди погоди! Ты выбил код Самарского региона ГОООООЛ {samara_emoji} {skolen_emoji} {samara_emoji} Живи пока что как свободный (самарский) человек"
+        file_to_show = discord.File(SAMARA_GIF, filename="samara.gif")
+        return string_to_show, file_to_show, None
+        # await message.reply(string_to_show, file=file_to_show)
+    elif roll > mute_chance:
+        # мут: используем timeout
+        string_to_show = f"Выпало {roll}! Ты в муте на {mute_minutes} минут"
+        file_to_show = discord.File(MUTED_GIF, filename="muted.gif")
+        if roll == 52:
+            string_to_show = f"Выпало {roll}! :zany_face: ПИСЯЯТ ДВААА ыыы :zany_face: Ты в муте на 52..ладно {mute_minutes} минут"
+            return string_to_show, file_to_show, mute_minutes
+        elif roll >= OVERKILL:
+            mute_minutes = mute_minutes * OVERKILL_MUTE_MULTIPLIER
+            string_to_show = f"Выпало {roll}! :skull: OVERKILL :skull: Ты в муте на {mute_minutes} минут"
+            return string_to_show, file_to_show, mute_minutes
+        else:
+            return string_to_show, file_to_show, mute_minutes
+        """
+        try:
+            await message.author.timeout(timedelta(minutes=mute_minutes))
+            await message.reply(string_to_show, file=file_to_show)
+            # message.author.add_roles(Ro)
+            # TODO: await update_roulette_streak(discord_id, 0)  # Reset streak
+        except discord.Forbidden:
+            return string_to_show, file_to_show, None
+        
+            await message.reply(
+                f"Выпало {roll}, но блин, у меня нет прав на мут.. :( Так бы я тебя замутил :smiling_imp: ")
+        """
+    else:
+        file = discord.File(SURVIVED_GIF, filename="survived.gif")
+        # await message.reply(f"Выжил! Твой streak теперь {streak + 1}. В следующий раз шанс мута выше.")
+        return f"Выпало {roll}! Тебе повезло..", file, None
+        await message.reply(f"Выпало {roll}! Тебе повезло..", file=file)
+
+
 @bot.event
 async def on_message(message: discord.Message):
     if message.author.bot:  # Игнорируем ботов
@@ -199,6 +245,15 @@ async def on_message(message: discord.Message):
 
     # упомянута ли роль @X  ?
     if any(role.id == ROLE_X_ID for role in message.role_mentions):
+        if message.channel.id != BOTS_COMMAND_ID:
+            bots_channel = bot.get_channel(BOTS_COMMAND_ID)
+            if bots_channel:
+                file_to_show = discord.File(DODEP_GIF, filename="dodep.gif")
+                await bots_channel.send(
+                    f"Ты {message.author.mention} попытался пингануть @X в {message.channel.mention}! "
+                    f"\nДелай это здесь, чтобы сыграть в ~~додеп~~-рулетку! 🎰 ", file=file_to_show
+                )
+            return
         discord_id = str(message.author.id)
         if discord_id in history_ids and history_ids[discord_id] > 0:
             await message.reply(f"Нононо мистер фиш, ожидайте вынесения приговора")
@@ -209,42 +264,24 @@ async def on_message(message: discord.Message):
         mute_chance = BASE_MUTE_CHANCE + (CHANCE_INCREASE_PER_STREAK * streak)
         mute_minutes = BASE_MUTE_MINUTES + (MINUTES_INCREASE_PER_STREAK * streak)
 
-        roll = random.randint(1, 100)
+        # roll = random.randint(1, 100)
         await message.reply(f"Роллю кубик... Если >{mute_chance}, то мут на {mute_minutes} мин.")
-        await asyncio.sleep(1)
+        # await asyncio.sleep(1)
 
         role = message.guild.get_role(ROLE_X_ID)
         has_role = True if message.author.get_role(ROLE_X_ID) else False
         if not has_role and role:
             await message.author.add_roles(role)
             await message.reply("Ты пинганул @ X — теперь у тебя тоже эта роль! 😈")
-            # return
-        # await message.reply(f"Выпало {roll}!")
-        if roll == 63:
-            string_to_show = f"Выпало {roll}! Ты в му..Погоди погоди! Ты выбил код Самарского региона ГОООООЛ :samara: :skolen: :samara: Живи пока что как свободный (самарский) человек"
-            file_to_show = discord.File(SAMARA_GIF, filename="samara.gif")
-            await message.reply(string_to_show, file=file_to_show)
-        elif roll > mute_chance:
-            # мут: используем timeout
-            string_to_show = f"Выпало {roll}! Ты в муте на {mute_minutes} минут"
-            file_to_show = discord.File(MUTED_GIF, filename="muted.gif")
-            if roll == 52:
-                string_to_show = f"Выпало {roll}! :zany_face: ПИСЯЯТ ДВААА ыыы :zany_face: Ты в муте на 52..ладно {mute_minutes} минут"
-            if roll >= OVERKILL:
-                mute_minutes = mute_minutes * OVERKILL_MUTE_MULTIPLIER
-                string_to_show = f"Выпало {roll}! :skull: OVERKILL :skull: Ты в муте на {mute_minutes} минут"
+        roll = random.randint(1, 100)
+        string_to_show, file, mute_for = await get_timeout_and_message(roll, mute_chance, mute_minutes)
+        if mute_for and mute_for > 0:
             try:
-                await message.author.timeout(timedelta(minutes=mute_minutes))
-                await message.reply(string_to_show, file=file_to_show)
-                # message.author.add_roles(Ro)
-                # TODO: await update_roulette_streak(discord_id, 0)  # Reset streak
+                await message.author.timeout(timedelta(minutes=mute_for))
             except discord.Forbidden:
-                await message.reply(f"Выпало {roll}, но блин, у меня нет прав на мут.. :( Так бы я тебя замутил :smiling_imp: ")
-        else:
-            file = discord.File(SURVIVED_GIF, filename="survived.gif")
-            # await message.reply(f"Выжил! Твой streak теперь {streak + 1}. В следующий раз шанс мута выше.")
-            await message.reply(f"Выпало {roll}! Тебе повезло..", file=file)
-            # TODO: await update_roulette_streak(discord_id, streak + 1)  # Увеличиваем streak
+                string_to_show = f"Выпало {roll}, но блин, у меня нет прав на мут.. :( Так бы я тебя замутил :smiling_imp: "
+                file = None
+        await message.reply(string_to_show, file=file)
         history_ids[discord_id] = 0
 
     await bot.process_commands(message)  # Не забываем обрабатывать команды
