@@ -16,10 +16,14 @@ class RouletteCommands(commands.Cog):
         self.ROLE_X_ID = settings.ROLE_X_ID
         self.BOTS_COMMAND_ID = settings.BOTS_COMMAND_ID
         self.GIF_FOLDER = settings.GIF_FOLDER
-        self.ROLE_REMOVED_GIF = os.path.join(self.GIF_FOLDER, "suigintou-happy.gif")
-        self.SURVIVED_GIF = os.path.join(self.GIF_FOLDER, "suigintou-rozen-maiden-tease.gif")
-        self.MUTED_GIF = os.path.join(self.GIF_FOLDER, "rozen-maiden-suiguintou-muted.gif")
-        self.SAMARA_GIF = os.path.join(self.GIF_FOLDER, "samara-flag-waving.gif")
+        self.ROLE_REMOVED_GIF = os.path.join(
+            self.GIF_FOLDER, "suigintou-happy.gif")
+        self.SURVIVED_GIF = os.path.join(
+            self.GIF_FOLDER, "suigintou-rozen-maiden-tease.gif")
+        self.MUTED_GIF = os.path.join(
+            self.GIF_FOLDER, "rozen-maiden-suiguintou-muted.gif")
+        self.SAMARA_GIF = os.path.join(
+            self.GIF_FOLDER, "samara-flag-waving.gif")
         self.DODEP_GIF = os.path.join(self.GIF_FOLDER, "dodep.gif")
         self.samara_emoji = "<:samara:1416124739981938709>"
         self.skolen_emoji = "<:skolen:541635738182090767>"
@@ -41,7 +45,8 @@ class RouletteCommands(commands.Cog):
                 message = f"Выпало {roll}! :skull: OVERKILL :skull: Ты в муте на {mute_minutes} минут"
             else:
                 message = f"Выпало {roll}! Ты в муте на {mute_minutes} минут"
-            return message, discord.File(self.MUTED_GIF, filename="muted.gif"), mute_minutes
+            return message, discord.File(
+                self.MUTED_GIF, filename="muted.gif"), mute_minutes
         else:
             return (
                 f"Выпало {roll}! Тебе повезло..",
@@ -58,7 +63,8 @@ class RouletteCommands(commands.Cog):
             if message.channel.id != self.BOTS_COMMAND_ID:
                 bots_channel = self.bot.get_channel(self.BOTS_COMMAND_ID)
                 if bots_channel:
-                    file_to_show = discord.File(self.DODEP_GIF, filename="dodep.gif")
+                    file_to_show = discord.File(
+                        self.DODEP_GIF, filename="dodep.gif")
                     await bots_channel.send(
                         f"Ты {message.author.mention} попытался пингануть @X в {message.channel.mention}! "
                         f"\nДелай это здесь, чтобы сыграть в ~~додеп~~-рулетку! 🎰 ", file=file_to_show
@@ -70,12 +76,15 @@ class RouletteCommands(commands.Cog):
                 return
             streak = 0  # TODO: await get_roulette_streak(discord_id)
             self.history_ids[discord_id] = 1
-            mute_chance = settings.BASE_MUTE_CHANCE + (settings.CHANCE_INCREASE_PER_STREAK * streak)
-            mute_minutes = settings.BASE_MUTE_MINUTES + (settings.MINUTES_INCREASE_PER_STREAK * streak)
+            mute_chance = settings.BASE_MUTE_CHANCE + \
+                (settings.CHANCE_INCREASE_PER_STREAK * streak)
+            mute_minutes = settings.BASE_MUTE_MINUTES + \
+                (settings.MINUTES_INCREASE_PER_STREAK * streak)
 
             await message.reply(f"Роллю кубик... Если >{mute_chance}, то мут на {mute_minutes} мин.")
             role = message.guild.get_role(self.ROLE_X_ID)
-            has_role = True if message.author.get_role(self.ROLE_X_ID) else False
+            has_role = True if message.author.get_role(
+                self.ROLE_X_ID) else False
             if not has_role and role:
                 await message.author.add_roles(role)
                 await message.reply("Ты пинганул @ X — теперь у тебя тоже эта роль! 😈")
@@ -90,7 +99,8 @@ class RouletteCommands(commands.Cog):
             await message.reply(string_to_show, file=file)
             self.history_ids[discord_id] = 0
 
-    @app_commands.command(name="простите-пожалуйста", description="Снять роль @X с позором")
+    @app_commands.command(name="простите-пожалуйста",
+                          description="Снять роль @X с позором")
     async def prostite_pozhaluysta(self, interaction: Interaction):
         await interaction.response.defer()
         role = interaction.guild.get_role(self.ROLE_X_ID)
@@ -102,10 +112,13 @@ class RouletteCommands(commands.Cog):
             return
         try:
             await interaction.user.remove_roles(role)
-            file = discord.File(self.ROLE_REMOVED_GIF, filename="role_removed.gif")
+            file = discord.File(
+                self.ROLE_REMOVED_GIF,
+                filename="role_removed.gif")
             await interaction.followup.send("Роль @ X снята с позором :stuck_out_tongue_winking_eye: ", file=file)
         except discord.Forbidden:
             await interaction.followup.send("У меня нет прав снять роль. Сообщи об этом @Boriska")
+
 
 async def setup(bot):
     await bot.add_cog(RouletteCommands(bot))

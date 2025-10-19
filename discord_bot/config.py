@@ -8,7 +8,8 @@ from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parent  # Корневая директория проекта
 ENV_FILE = BASE_DIR / ".env"
 if not os.path.exists(ENV_FILE):
-    BASE_DIR = Path(__file__).resolve().parent.parent  # Корневая директория проекта
+    # Корневая директория проекта
+    BASE_DIR = Path(__file__).resolve().parent.parent
     ENV_FILE = BASE_DIR / ".env"
 
 
@@ -39,6 +40,7 @@ def get_auth_headers():
         "Authorization": f"Bearer {settings.BOT_API_KEY}",
         "Content-Type": "application/json"
     }
+
 
 settings = Settings()
 # OSU_API_ASYNC = OssapiAsync(settings.OSU_CLIENT_ID, settings.OSU_CLIENT_SECRET)
