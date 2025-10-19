@@ -1,6 +1,7 @@
-from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Boolean, BigInteger, Enum, CheckConstraint
+from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Boolean, BigInteger, Enum, CheckConstraint, \
+    JSON
 from sqlalchemy.ext.asyncio import AsyncAttrs
-from sqlalchemy.orm import DeclarativeBase, relationship
+from sqlalchemy.orm import DeclarativeBase, relationship, mapped_column, Mapped
 from datetime import datetime
 import enum
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
@@ -30,6 +31,11 @@ class User(Base):
     active = Column(Boolean, default=True, nullable=False)
     is_deleted = Column(Boolean, default=False, nullable=False)
     role = Column(Enum(Role), default=Role.user, nullable=False)
+
+    roulette_rolls = Column(Integer, default=0)
+    roulette_wins = Column(Integer, default=0)
+    roulette_streak_current = Column(Integer, default=0)
+    roulette_achievements: Mapped[list[str]] = mapped_column(JSON, default=list)  # ['выбил_63', 'overkill_3_times', ...]
 
     # Связь с таблицей matches
     matches_as_player1 = relationship("Match", foreign_keys="[Match.player1_id]", back_populates="player1")

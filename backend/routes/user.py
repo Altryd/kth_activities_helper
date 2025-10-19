@@ -107,3 +107,44 @@ async def get_user_by_username(username: str, auth_info: Optional[dict] = Depend
     user_dto.matches = player.matches
 
     return user_dto
+
+
+@router.get("/user/{discord_id}/roulette_stats")
+async def get_roulette_stats(discord_id: str, db=Depends(get_db)):
+    user = await db.execute(select(User).where(User.discord_id == discord_id))
+    user = user.scalar_one_or_none()
+    if not user:
+        raise HTTPException(404, "User not found")
+    return {
+        "rolls": user.roulette_rolls,
+        "wins": user.roulette_wins,
+        "streak_current": user.roulette_streak_current,
+        "achievements": user.roulette_achievements,
+        "winrate": (user.roulette_wins / user.roulette_rolls * 100) if user.roulette_rolls > 0 else 0
+    }
+
+
+@router.post("/user/{discord_id}/update_roulette")
+async def update_roulette(discord_id: str, data: dict, db=Depends(
+    get_db)):  # data: {'roll': int, 'won': bool, 'streak': int, 'achievements': list[str]}
+    user = await db.execute(select(User).where(User.discord_id == discord_id))
+    user = user.scalar_one_or_none()
+    if not user:
+        raise HTTPException(404, "User not found")
+    if not user.roulette_rolls:
+        user.roulette_rolls = 0
+        user.roulette_wins = 0
+        user.roulette_streak_current = 0
+        user.roulette_achievements = list()
+    user.roulette_rolls += 1
+    if data['won']:
+        user.roulette_wins += 1
+        user.roulette_streak_current = data['streak']
+    else:
+        user.roulette_streak_current = 0
+
+    new_achievements = set(user.roulette_achievements) | set(data.get('achievements', []))
+    user.roulette_achievements = list(new_achievements)
+
+    await db.commit()
+    return {"status": "updated"}

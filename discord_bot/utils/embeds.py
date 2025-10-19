@@ -25,3 +25,18 @@ def get_embed_for_userinfo(user_data: dict) -> discord.Embed:
     embed.add_field(name="Activity:", value=active_value, inline=False)
     embed.set_footer(text="4unc Ky")
     return embed
+
+
+def get_embed_for_roulette_stats(stats: dict, user: discord.User) -> discord.Embed:
+    embed = discord.Embed(
+        title=f"Рулетка-статистика: {user.display_name}",
+        color=discord.Color.green()
+    )
+    embed.add_field(name="Круток", value=stats['rolls'], inline=True)
+    embed.add_field(name="Выигрышей", value=stats['wins'], inline=True)
+    embed.add_field(name="Winrate", value=f"{stats['winrate']:.2f}%", inline=True)
+    embed.add_field(name="Текущий streak", value=stats['streak_current'], inline=True)
+    embed.add_field(name="Достижения", value="\n".join(stats['achievements']) or "Нет достижений", inline=False)
+    embed.set_thumbnail(url=user.avatar.url if user.avatar else None)
+    embed.set_footer(text="4unc Ky")
+    return embed
