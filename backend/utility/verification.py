@@ -12,7 +12,8 @@ def verify_jwt(authorization: Optional[str] = Header(None)):
     token = authorization.split(" ")[1]
     try:
         payload = jwt.decode(token, settings.JWT_SECRET, algorithms=["HS256"])
-        return payload["sub"]  # Предполагаем, что в JWT хранится user_id или discord_id
+        # Предполагаем, что в JWT хранится user_id или discord_id
+        return payload["sub"]
     except jwt.InvalidTokenError:
         return None
 
@@ -49,7 +50,8 @@ def verify_auth(request: Request) -> dict:
         raise HTTPException(status_code=401, detail="Invalid token")
 
 
-# def optional_auth(authorization: Optional[str] = Header(None, alias="Authorization")) -> Optional[dict]:
+# def optional_auth(authorization: Optional[str] = Header(None,
+# alias="Authorization")) -> Optional[dict]:
 def optional_auth(request: Request) -> Optional[dict]:
     """Возвращает None если нет авторизации, или данные пользователя/бота"""
     authorization = request.headers.get("Authorization")

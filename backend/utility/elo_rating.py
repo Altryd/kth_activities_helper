@@ -1,4 +1,5 @@
-def get_new_rating(initial_rating, opponent_rating, player_wins, opponent_wins, k=35):
+def get_new_rating(initial_rating, opponent_rating,
+                   player_wins, opponent_wins, k=35):
     """
 
     :param initial_rating: старый рейтинг

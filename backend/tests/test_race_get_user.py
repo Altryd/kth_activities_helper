@@ -26,11 +26,15 @@ async def test_concurrent_get_user(monkeypatch):
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("test_input", [
-    {"username_or_id": "Boriska", "type": "username", "result_id": 6560308, "resultNone": False},
+    {"username_or_id": "Boriska", "type": "username",
+        "result_id": 6560308, "resultNone": False},
     {"username_or_id": 6560308, "type": "id", "resultNone": False},
-    {"username_or_id": 1345541342423, "type": "id", "resultNone": True, "raises": HTTPException},
-    {"username_or_id": "", "type": "username", "resultNone": True, "raises": HTTPException},
-    {"username_or_id": None, "type": "username", "resultNone": True, "raises": HTTPException}
+    {"username_or_id": 1345541342423, "type": "id",
+        "resultNone": True, "raises": HTTPException},
+    {"username_or_id": "", "type": "username",
+        "resultNone": True, "raises": HTTPException},
+    {"username_or_id": None, "type": "username",
+        "resultNone": True, "raises": HTTPException}
 ])
 async def test_get_user(test_input):
     osu_api = OssapiAsync(settings.OSU_CLIENT_ID, settings.OSU_CLIENT_SECRET)
@@ -47,13 +51,23 @@ async def test_get_user(test_input):
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("test_input", [
-    {"ids": [6560308, 11234356, 11359985], "result_usernames": ["Boriska", "Meowzarte", "8mi8", "lol"], "valid_return_len": 3},
-    {"ids": [6560308, 11234356, 3497238463287412], "result_usernames": ["Boriska", "Meowzarte"], "valid_return_len": 2},
+    {"ids": [6560308, 11234356, 11359985], "result_usernames": [
+        "Boriska", "Meowzarte", "8mi8", "lol"], "valid_return_len": 3},
+    {"ids": [6560308, 11234356, 3497238463287412], "result_usernames": [
+        "Boriska", "Meowzarte"], "valid_return_len": 2},
     {"ids": [3497238463287412], "result_usernames": [], "valid_return_len": 0},
-    {"ids": [], "result_usernames": [], "valid_return_len": 0, "raises": HTTPException},
-    {"ids": [0, -1, -2], "result_usernames": [], "valid_return_len": 0, "raises": HTTPException},
-    {"ids": "", "result_usernames": [], "valid_return_len": 0, "raises": HTTPException},
-    {"ids": ["6560308", "1337228"], "result_usernames": [], "valid_return_len": 0, "raises": HTTPException},
+    {"ids": [],
+     "result_usernames": [],
+     "valid_return_len": 0,
+     "raises": HTTPException},
+    {"ids": [0, -1, -2], "result_usernames": [],
+        "valid_return_len": 0, "raises": HTTPException},
+    {"ids": "",
+     "result_usernames": [],
+     "valid_return_len": 0,
+     "raises": HTTPException},
+    {"ids": ["6560308", "1337228"], "result_usernames": [],
+        "valid_return_len": 0, "raises": HTTPException},
 ])
 async def test_get_users(test_input):
     osu_api = OssapiAsync(settings.OSU_CLIENT_ID, settings.OSU_CLIENT_SECRET)

@@ -25,7 +25,8 @@ async def main():
         # print(username, display_name, joined_at, discord_id)
         osu_user = None
         try:
-            potential_osu_user = await get_user(username, OSU_API_ASYNC)  # Теперь можно использовать await
+            # Теперь можно использовать await
+            potential_osu_user = await get_user(username, OSU_API_ASYNC)
             if potential_osu_user.statistics.pp > 500:
                 osu_user = potential_osu_user
         except HTTPException as ex:
@@ -33,7 +34,8 @@ async def main():
         if not osu_user:
             time.sleep(1)
             try:
-                potential_osu_user = await get_user(display_name, OSU_API_ASYNC)  # Теперь можно использовать await
+                # Теперь можно использовать await
+                potential_osu_user = await get_user(display_name, OSU_API_ASYNC)
                 if potential_osu_user.statistics.pp > 500:
                     osu_user = potential_osu_user
             except HTTPException as ex:
@@ -97,9 +99,11 @@ class RatingNormalizer:
             return rating
         else:
             sr_excess = star_rate - self.target_sr
-            base_boost = rating * 0.1 * sr_excess  # базовая прибавка за каждую "лишнюю" звезду
+            # базовая прибавка за каждую "лишнюю" звезду
+            base_boost = rating * 0.1 * sr_excess
             rating_deficit = max(0, self.rating_threshold - rating)
-            deficit_boost = rating_deficit * (star_rate / self.target_sr) ** self.k
+            deficit_boost = rating_deficit * \
+                (star_rate / self.target_sr) ** self.k
             return rating + base_boost + deficit_boost
     """
     def normalize(self, rating, star_rate):
@@ -151,11 +155,11 @@ async def combine_files(ratings_file: str = "result_rating.csv", members_file: s
         # rating, sr = int(row['rating']), float(row['sr'])
         # normalized_rating = rating_normalizer.normalize(rating, sr)
         # users.append(row['username'], row['rating'], row['sr'], normalized_rating)
-        #users_ratings.append({"username": row['username'], "rating": row['rating'], "sr": row['sr'],
+        # users_ratings.append({"username": row['username'], "rating": row['rating'], "sr": row['sr'],
         #                      "normalized_rating": row['normalized_rating']})
         users_with_rating.append(row["username"])
         users_ratings[row["username"]] = {"rating": row['rating'], "sr": row['sr'],
-                              "normalized_rating": row['normalized_rating']}
+                                          "normalized_rating": row['normalized_rating']}
 
     with open(members_file, "rb") as fp:
         content = fp.read()
@@ -165,7 +169,7 @@ async def combine_files(ratings_file: str = "result_rating.csv", members_file: s
     for row in csv_reader:
         users_info[row["username"]] = {"discord_id": row['discord_id'], "osu_id": row['osu_id'],
                                        "pp": row['pp'], "display_name": row['display_name']}
-        #users_info.append({"username": row['username'], "discord_id": row['discord_id'], "osu_id": row['osu_id'],
+        # users_info.append({"username": row['username'], "discord_id": row['discord_id'], "osu_id": row['osu_id'],
         #                   "pp": row['pp'], "display_name": row['display_name']})
     result_list_with_info = []
     for username, user_info in users_info.items():
@@ -177,9 +181,17 @@ async def combine_files(ratings_file: str = "result_rating.csv", members_file: s
                               "rating": users_ratings[username]["normalized_rating"]})
             result_list_with_info.append(user_info)
         else:
-            user_info.update({"username": username, "sr": None, "rating": None})
+            user_info.update(
+                {"username": username, "sr": None, "rating": None})
             result_list_with_info.append(user_info)
-    headers = ["osu_id", "username", "pp", "rating", "sr", "discord_id", "display_name"]
+    headers = [
+        "osu_id",
+        "username",
+        "pp",
+        "rating",
+        "sr",
+        "discord_id",
+        "display_name"]
     with open(result_file, "w", newline="", encoding='utf-8') as f:
         writer = csv.DictWriter(f, headers)
         writer.writeheader()

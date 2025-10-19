@@ -29,31 +29,33 @@ async def get_osu_api():
     return settings.OSU_API_ASYNC
 
 
-
-
-
 # Эндпоинт для получения пользователей
 @app.post("/users")
-async def fetch_users(ids: List[int], osu_api=Depends(get_osu_api), db: AsyncSession = Depends(get_db)):
+async def fetch_users(ids: List[int], osu_api=Depends(
+        get_osu_api), db: AsyncSession = Depends(get_db)):
     users = await get_users(ids, osu_api, db)
     if not users:
         raise HTTPException(status_code=404, detail="No users found")
 
     return [UserDTO(osu_id=user.id, discord_id=None, username=user.username, pp=user.statistics_rulesets.osu.pp,
-                         elo_rating=user.statistics_rulesets.osu.pp * 10, role=Role.user) for user in users]
+                    elo_rating=user.statistics_rulesets.osu.pp * 10, role=Role.user) for user in users]
 
 
 # Эндпоинт для записи матча
 @app.post("/match")
-async def record_match(result: MatchResult, db: AsyncSession = Depends(get_db)):
+async def record_match(result: MatchResult,
+                       db: AsyncSession = Depends(get_db)):
     if result.player1_id == result.player2_id:
-        raise HTTPException(status_code=400, detail="Players must be different")
+        raise HTTPException(
+            status_code=400,
+            detail="Players must be different")
 
     # Проверяем существование игроков
     player1 = await db.get(User, result.player1_id)
     player2 = await db.get(User, result.player2_id)
     if not player1 or not player2:
-        raise HTTPException(status_code=404, detail="One or both players not found")
+        raise HTTPException(status_code=404,
+                            detail="One or both players not found")
 
     # Расчёт Elo
     winner_id = result.player1_id if result.player1_score > result.player2_score else result.player2_id

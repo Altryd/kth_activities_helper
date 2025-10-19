@@ -3,7 +3,8 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List, Dict
 from backend.database import get_db, User, Role
-from backend.osu_api.get_user import get_user, get_users  # Предполагаю, что это ваша функция для получения User по username
+# Предполагаю, что это ваша функция для получения User по username
+from backend.osu_api.get_user import get_user, get_users
 from backend.config import OSU_API_ASYNC  # Ваш асинхронный osu_api клиент
 from csv import DictReader
 from io import StringIO
@@ -33,7 +34,8 @@ class UpdateUserResult(BaseModel):
 
 
 # @admin_router.post("/update_all_players_pp")
-async def update_all_players_ppold(db: AsyncSession = Depends(get_db)) -> List[UpdateUserResult]:
+async def update_all_players_ppold(
+        db: AsyncSession = Depends(get_db)) -> List[UpdateUserResult]:
     players_query = select(User)
     all_players = (await db.execute(players_query)).scalars().all()
     batch_size = 35
@@ -52,7 +54,7 @@ async def update_all_players_ppold(db: AsyncSession = Depends(get_db)) -> List[U
             if osu_ids_batch[j] not in [user.id for user in users]:
                 logger.warning(f"unluck: {osu_ids_batch[j]}")
                 result.append(UpdateUserResult(status="skipped", osu_id=player.osu_id,
-                                                        old_pp=player.pp, new_pp=None, username=player.username))
+                                               old_pp=player.pp, new_pp=None, username=player.username))
                 skipped += 1
             else:
                 old_pp = player.pp
@@ -70,7 +72,8 @@ async def update_all_players_ppold(db: AsyncSession = Depends(get_db)) -> List[U
 
 
 @admin_router.post("/update_all_players_pp")
-async def update_all_players_pp(db: AsyncSession = Depends(get_db)) -> List[UpdateUserResult]:
+async def update_all_players_pp(
+        db: AsyncSession = Depends(get_db)) -> List[UpdateUserResult]:
     result = []
     batch_size = 35
     offset = 0
@@ -160,9 +163,12 @@ async def preview_csv(
     for row in preprocessing_users:
         if len(row["osu_id"]) > 0:
             osu_ids.append(int(row['osu_id']))
-    osu_ids = [int(row['osu_id']) for row in preprocessing_users if len(row['osu_id']) > 0]
-    bad_osu_ids = [row['osu_id'] for row in preprocessing_users if len(row['osu_id']) == 0]
-    bad_osu_usernames = [row['username'] for row in preprocessing_users if len(row['osu_id']) == 0]
+    osu_ids = [int(row['osu_id'])
+               for row in preprocessing_users if len(row['osu_id']) > 0]
+    bad_osu_ids = [row['osu_id']
+                   for row in preprocessing_users if len(row['osu_id']) == 0]
+    bad_osu_usernames = [row['username']
+                         for row in preprocessing_users if len(row['osu_id']) == 0]
 
     if len(bad_osu_ids) > 0:
         raise HTTPException(status_code=404, detail=f"Users with ids: {bad_osu_ids} "
@@ -179,7 +185,9 @@ async def preview_csv(
     # not_found = not_found + bad_osu_ids
 
     if len(not_found) > 0:
-        raise HTTPException(status_code=404, detail=f"Users with ids: {not_found} not found in osu! API")
+        raise HTTPException(
+            status_code=404,
+            detail=f"Users with ids: {not_found} not found in osu! API")
 
     csv_reader = DictReader(StringIO(content_str))
     for row in csv_reader:
@@ -225,7 +233,8 @@ async def preview_csv(
 
 
 class ApplyChangesRequest(BaseModel):
-    changes: List[PreviewChange]  # Список изменений от preview, возможно подправленный админом
+    # Список изменений от preview, возможно подправленный админом
+    changes: List[PreviewChange]
 
 
 @admin_router.post("/apply_csv_changes")
@@ -242,7 +251,9 @@ async def apply_csv_changes(
             db_user = await db.get(User, change.osu_id)
             if change.action == "add":
                 if db_user:
-                    raise HTTPException(status_code=400, detail=f"User {change.username} already exists, cannot add")
+                    raise HTTPException(
+                        status_code=400,
+                        detail=f"User {change.username} already exists, cannot add")
                 new_user = User(
                     osu_id=change.osu_id,
                     username=change.username,
@@ -253,7 +264,9 @@ async def apply_csv_changes(
                 db.add(new_user)
             elif change.action == "update":
                 if not db_user:
-                    raise HTTPException(status_code=404, detail=f"User {change.username} not found for update")
+                    raise HTTPException(
+                        status_code=404,
+                        detail=f"User {change.username} not found for update")
                 db_user.elo_rating = change.new_elo_rating
                 if change.discord_id:
                     db_user.discord_id = change.discord_id

@@ -6,7 +6,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 from backend.models import UserDTO, UserDTOPublic
 from backend.database import get_db, User
-from backend.utility.verification import verify_jwt, optional_auth, verify_auth  # verify_bot_api_key
+# verify_bot_api_key
+from backend.utility.verification import verify_jwt, optional_auth, verify_auth
 import jwt
 
 router = APIRouter()
@@ -24,7 +25,8 @@ async def register_user(
     auth_info: Optional[dict] = Depends(verify_auth),
     db: AsyncSession = Depends(get_db)
 ):
-    # Если посылается с фронтенда - тогда нужно в JWT проверять. Если же с бота - тогда просто по апи ключу..
+    # Если посылается с фронтенда - тогда нужно в JWT проверять. Если же с
+    # бота - тогда просто по апи ключу..
     user_id = None
     if not auth_info:
         raise HTTPException(status_code=401, detail="Invalid authentication")
@@ -51,7 +53,6 @@ async def register_user(
     else:
         raise HTTPException(status_code=401, detail="Invalid authentication")
 
-
     player = (await db.execute(player_query)).scalars().first()
     if not player:
         raise HTTPException(status_code=404, detail="User not found")
@@ -68,7 +69,8 @@ async def register_user(
 
 
 @router.get("/user/id/{user_id}")
-async def get_user(user_id: int, db: AsyncSession = Depends(get_db)) -> UserDTO:
+async def get_user(user_id: int,
+                   db: AsyncSession = Depends(get_db)) -> UserDTO:
     player_query = (
         select(User)
         .where(User.osu_id == user_id)
@@ -85,7 +87,8 @@ async def get_user(user_id: int, db: AsyncSession = Depends(get_db)) -> UserDTO:
     return userDTO
 
 
-@router.get("/user/username/{username}")  # , dependencies=[Depends(verify_bot_api_key)])
+# , dependencies=[Depends(verify_bot_api_key)])
+@router.get("/user/username/{username}")
 async def get_user_by_username(username: str, auth_info: Optional[dict] = Depends(optional_auth),
                                db: AsyncSession = Depends(get_db)) -> Union[UserDTO, UserDTOPublic]:
     # test = verify_bot_api_key(authorization)
@@ -126,7 +129,7 @@ async def get_roulette_stats(discord_id: str, db=Depends(get_db)):
 
 @router.post("/user/{discord_id}/update_roulette")
 async def update_roulette(discord_id: str, data: dict, db=Depends(
-    get_db)):  # data: {'roll': int, 'won': bool, 'streak': int, 'achievements': list[str]}
+        get_db)):  # data: {'roll': int, 'won': bool, 'streak': int, 'achievements': list[str]}
     user = await db.execute(select(User).where(User.discord_id == discord_id))
     user = user.scalar_one_or_none()
     if not user:
@@ -143,7 +146,10 @@ async def update_roulette(discord_id: str, data: dict, db=Depends(
     else:
         user.roulette_streak_current = 0
 
-    new_achievements = set(user.roulette_achievements) | set(data.get('achievements', []))
+    new_achievements = set(
+        user.roulette_achievements) | set(
+        data.get(
+            'achievements', []))
     user.roulette_achievements = list(new_achievements)
 
     await db.commit()

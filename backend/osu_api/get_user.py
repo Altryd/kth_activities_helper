@@ -5,7 +5,8 @@ from fastapi import HTTPException
 from backend.get_logger import logger
 
 
-async def get_user(id_or_username: str | int, osu_api: OssapiAsync) -> User | None:
+async def get_user(id_or_username: str | int,
+                   osu_api: OssapiAsync) -> User | None:
     """
     Asynchronously retrieves an osu! user by username or ID.
 
@@ -19,9 +20,11 @@ async def get_user(id_or_username: str | int, osu_api: OssapiAsync) -> User | No
     Raises:
         HTTPException: If the API request fails or the input is invalid.
     """
-    if id_or_username is None or (isinstance(id_or_username, str) and not id_or_username.strip()):
+    if id_or_username is None or (isinstance(
+            id_or_username, str) and not id_or_username.strip()):
         logger.error(f"Invalid input in get_user: {id_or_username}")
-        raise HTTPException(status_code=400, detail="Username or ID cannot be None or empty")
+        raise HTTPException(status_code=400,
+                            detail="Username or ID cannot be None or empty")
     try:
         user = await osu_api.user(id_or_username)
         return user
@@ -29,11 +32,13 @@ async def get_user(id_or_username: str | int, osu_api: OssapiAsync) -> User | No
         logger.error(f"ValueError in get_user for {id_or_username}: {ex}")
         raise HTTPException(status_code=400, detail="Invalid username or ID")
     except Exception as ex:
-        logger.error(f"Unexpected error in get_user for {id_or_username}: {ex}")
+        logger.error(
+            f"Unexpected error in get_user for {id_or_username}: {ex}")
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
-async def get_users(ids_or_usernames: List[int], osu_api: OssapiAsync) -> List[UserCompact] | None:
+async def get_users(
+        ids_or_usernames: List[int], osu_api: OssapiAsync) -> List[UserCompact] | None:
     """
     Asynchronously retrieves an osu! users by IDs.
     Primarily used in project to get PP of batch of users.
@@ -50,10 +55,13 @@ async def get_users(ids_or_usernames: List[int], osu_api: OssapiAsync) -> List[U
     """
     if not ids_or_usernames:
         logger.error("Empty list of IDs provided to get_users")
-        raise HTTPException(status_code=400, detail="List of IDs cannot be empty")
+        raise HTTPException(
+            status_code=400,
+            detail="List of IDs cannot be empty")
     if not all(isinstance(id_, int) and id_ > 0 for id_ in ids_or_usernames):
         logger.error(f"Invalid IDs in get_users: {ids_or_usernames}")
-        raise HTTPException(status_code=400, detail="All IDs must be positive integers")
+        raise HTTPException(status_code=400,
+                            detail="All IDs must be positive integers")
     try:
         users = await osu_api.users(ids_or_usernames)
         return users
@@ -61,5 +69,6 @@ async def get_users(ids_or_usernames: List[int], osu_api: OssapiAsync) -> List[U
         logger.error(f"ValueError in get_users for {ids_or_usernames}: {ex}")
         raise HTTPException(status_code=400, detail="Invalid username or ID")
     except Exception as ex:
-        logger.error(f"Unexpected error in get_users for {ids_or_usernames}: {ex}")
+        logger.error(
+            f"Unexpected error in get_users for {ids_or_usernames}: {ex}")
         raise HTTPException(status_code=500, detail="Internal server error")

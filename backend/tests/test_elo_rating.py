@@ -3,21 +3,38 @@ from backend.utility.elo_rating import get_new_rating
 
 
 @pytest.mark.parametrize("test_input", [
-    {"rating_A": 630, "rating_B": 500, "A_wins": 3, "B_wins": 1, "diff": 16.8, "k": 35},
-    {"rating_A": 630, "rating_B": 500, "A_wins": 1, "B_wins": 3, "diff": -35.6, "k": 35},
-    {"rating_A": 630, "rating_B": 500, "A_wins": 2, "B_wins": 2, "diff": -6, "k": 35},
-    {"rating_A": 500, "rating_B": 480, "A_wins": 3, "B_wins": 1, "diff": 24.7, "k": 35},
-    {"rating_A": 500, "rating_B": 480, "A_wins": 1, "B_wins": 3, "diff": -27.75, "k": 35},
-    {"rating_A": 500, "rating_B": 480, "A_wins": 2, "B_wins": 2, "diff": -1, "k": 35},
+    {"rating_A": 630, "rating_B": 500, "A_wins": 3,
+        "B_wins": 1, "diff": 16.8, "k": 35},
+    {"rating_A": 630, "rating_B": 500, "A_wins": 1,
+        "B_wins": 3, "diff": -35.6, "k": 35},
+    {"rating_A": 630, "rating_B": 500, "A_wins": 2,
+        "B_wins": 2, "diff": -6, "k": 35},
+    {"rating_A": 500, "rating_B": 480, "A_wins": 3,
+        "B_wins": 1, "diff": 24.7, "k": 35},
+    {"rating_A": 500, "rating_B": 480, "A_wins": 1,
+        "B_wins": 3, "diff": -27.75, "k": 35},
+    {"rating_A": 500, "rating_B": 480, "A_wins": 2,
+        "B_wins": 2, "diff": -1, "k": 35},
     # wikipedia
-    {"rating_A": 630, "rating_B": 500, "A_wins": 3, "B_wins": 1, "diff": 9.6, "k": 20},
-    {"rating_A": 630, "rating_B": 500, "A_wins": 1, "B_wins": 3, "diff": -20.3, "k": 20},
-    {"rating_A": 630, "rating_B": 500, "A_wins": 2, "B_wins": 2, "diff": -3.5, "k": 20},
-    {"rating_A": 500, "rating_B": 480, "A_wins": 3, "B_wins": 1, "diff": 14.13, "k": 20},
-    {"rating_A": 500, "rating_B": 480, "A_wins": 1, "B_wins": 3, "diff": -15.8, "k": 20},
-    {"rating_A": 500, "rating_B": 480, "A_wins": 2, "B_wins": 2, "diff": -0.58, "k": 20},
+    {"rating_A": 630, "rating_B": 500, "A_wins": 3,
+        "B_wins": 1, "diff": 9.6, "k": 20},
+    {"rating_A": 630, "rating_B": 500, "A_wins": 1,
+        "B_wins": 3, "diff": -20.3, "k": 20},
+    {"rating_A": 630, "rating_B": 500, "A_wins": 2,
+        "B_wins": 2, "diff": -3.5, "k": 20},
+    {"rating_A": 500, "rating_B": 480, "A_wins": 3,
+        "B_wins": 1, "diff": 14.13, "k": 20},
+    {"rating_A": 500, "rating_B": 480, "A_wins": 1,
+        "B_wins": 3, "diff": -15.8, "k": 20},
+    {"rating_A": 500, "rating_B": 480, "A_wins": 2,
+        "B_wins": 2, "diff": -0.58, "k": 20},
     # edge cases
-    {"rating_A": 1000, "rating_B": 100, "A_wins": 10, "B_wins": 0, "diff": 0.5, "k": 35},
+    {"rating_A": 1000,
+     "rating_B": 100,
+     "A_wins": 10,
+     "B_wins": 0,
+     "diff": 0.5,
+     "k": 35},
     {"rating_A": 500, "rating_B": 500, "A_wins": 0, "B_wins": 0, "diff": 0, "k": 35},
 ])
 def test_elo_rating(test_input):
@@ -52,4 +69,8 @@ def test_elo_rating(test_input):
 ])
 def test_elo_rises(test_input):
     with pytest.raises(ValueError):
-        get_new_rating(test_input["rating_A"], test_input["rating_B"], test_input["A_wins"], test_input["B_wins"])
+        get_new_rating(
+            test_input["rating_A"],
+            test_input["rating_B"],
+            test_input["A_wins"],
+            test_input["B_wins"])

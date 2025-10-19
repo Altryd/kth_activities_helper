@@ -1,7 +1,7 @@
 from typing import List
 
 from pydantic import BaseModel
-from backend.database import Role # , MatchStatus
+from backend.database import Role  # , MatchStatus
 
 
 class MatchResult(BaseModel):

@@ -14,12 +14,15 @@ router = APIRouter()
 
 
 class CreatePairsRequest(BaseModel):
-    temporary_used_players: Optional[List[str]] = []  # Временно используемые игроки (ники)
-    pairs_correction: Optional[List[List[str]]] = []  # Корректировки от админа: [[player1_nick, player2_nick], ...
+    # Временно используемые игроки (ники)
+    temporary_used_players: Optional[List[str]] = []
+    # Корректировки от админа: [[player1_nick, player2_nick], ...
+    pairs_correction: Optional[List[List[str]]] = []
 
 
 @router.post("/create_pairs")
-async def create_pairs(request: CreatePairsRequest, db: AsyncSession = Depends(get_db)):
+async def create_pairs(request: CreatePairsRequest,
+                       db: AsyncSession = Depends(get_db)):
     """
     Создание 1v1 пар игроков на основе Elo-рейтинга.
     Учитывает корректировки админа, временно используемых игроков и предыдущие матчи.
@@ -47,25 +50,35 @@ async def create_pairs(request: CreatePairsRequest, db: AsyncSession = Depends(g
         if len(pair) != 2:
             continue
         first_nick, second_nick = pair[0].lower(), pair[1].lower()
-        first_player = next((p for p in players if p.username.lower() == first_nick), None)
-        second_player = next((p for p in players if p.username.lower() == second_nick), None)
+        first_player = next(
+            (p for p in players if p.username.lower() == first_nick), None)
+        second_player = next(
+            (p for p in players if p.username.lower() == second_nick), None)
         if not first_player:
-            raise HTTPException(status_code=404, detail=f"Player with username {pair[0]} not found")
+            raise HTTPException(
+                status_code=404,
+                detail=f"Player with username {pair[0]} not found")
         if not second_player:
-            raise HTTPException(status_code=404, detail=f"Player with username {pair[1]} not found")
+            raise HTTPException(
+                status_code=404,
+                detail=f"Player with username {pair[1]} not found")
         if first_player.osu_id == second_player.osu_id:
-            raise HTTPException(status_code=400, detail="Players must be different")
+            raise HTTPException(
+                status_code=400,
+                detail="Players must be different")
         used_players.add(first_player.username)
         used_players.add(second_player.username)
         pairs.append((first_player, second_player))
-        logger.info(f"Admin correction: {first_player.username} vs {second_player.username}")
+        logger.info(
+            f"Admin correction: {first_player.username} vs {second_player.username}")
 
     # Сет всех игроков для расчёта неиспользованных
     all_players_set = {p.username for p in players}
 
     # Подбор оставшихся пар
     overpowered_players = []
-    one_year_ago = datetime.utcnow() - timedelta(days=365)  # Интервал для проверки предыдущих матчей
+    # Интервал для проверки предыдущих матчей
+    one_year_ago = datetime.utcnow() - timedelta(days=365)
     for player in players:
         if player.username in used_players:
             continue
@@ -104,7 +117,8 @@ async def create_pairs(request: CreatePairsRequest, db: AsyncSession = Depends(g
                     f"Неиспользованный игрок (нехватка пары): {player.username}, elo_rating {player.elo_rating}")
             else:
                 # Overpowered
-                overpowered_players.append((player.username, player.elo_rating))
+                overpowered_players.append(
+                    (player.username, player.elo_rating))
                 used_players.add(player.username)
                 unused.append(
                     f"Не найден подходящий соперник (skill issue): {player.username}, elo_rating {player.elo_rating}")
@@ -114,7 +128,8 @@ async def create_pairs(request: CreatePairsRequest, db: AsyncSession = Depends(g
     for unused_nick in unused_players:
         player = next((p for p in players if p.username == unused_nick), None)
         if player:
-            unused.append(f"Неиспользованный игрок (другие причины): {unused_nick}, elo_rating {player.elo_rating}")
+            unused.append(
+                f"Неиспользованный игрок (другие причины): {unused_nick}, elo_rating {player.elo_rating}")
 
     # Формирование ответа
     pairs_nickname = [(f"{pair[0].username} ({pair[0].elo_rating}) (pp: {pair[0].pp}) vs "

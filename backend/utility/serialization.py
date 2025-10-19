@@ -28,6 +28,7 @@ def serialize_match_to_json(match):
         "second_player_score": match.second_player_score,
         "is_approved": match.is_approved}
 
+
 def dump_to_csv(path_to_csv, data):
     with open(f'{path_to_csv}', 'w', encoding='UTF8', newline='') as f:
         writer = csv.writer(f, delimiter=',')

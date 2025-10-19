@@ -4,6 +4,7 @@ from backend.config import settings
 import jwt
 from datetime import datetime, timedelta
 
+
 @pytest.mark.asyncio
 async def test_pairs():
     response = requests.post(f"http://{settings.SERVER_HOST}:{settings.SERVER_PORT}/create_pairs",
