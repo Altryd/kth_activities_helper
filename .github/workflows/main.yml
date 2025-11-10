@@ -1,0 +1,80 @@
+name: testing
+
+on:
+  push:
+    branches: [ fastapi ]
+  workflow_dispatch:  # позволяет запускать вручную
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    services:
+      mysql:
+        image: mysql:latest
+        env:
+          MYSQL_ROOT_PASSWORD: test_root_password
+          MYSQL_DATABASE: test_db
+          MYSQL_USER: test_user
+          MYSQL_PASSWORD: test_password
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r backend/requirements.txt
+        pip install pytest pytest-asyncio httpx
+    
+    - name: Wait for MySQL
+      run: sleep 10
+    
+    - name: Run unit tests
+      run: |
+        cd backend
+        pytest tests/ -v -k "not integration"
+      env:
+        DB_HOST: 127.0.0.1
+        DB_NAME: test_db
+        MYSQL_USER: test_user
+        MYSQL_PASSWORD: test_password
+        MYSQL_PORT: 3306
+        MYSQL_IP: 127.0.0.1
+        JWT_SECRET: ${{ secrets.JWT_SECRET }}
+        BOT_API_KEY: ${{ secrets.BOT_API_KEY }}
+        OSU_CLIENT_ID: 12345
+        OSU_CLIENT_SECRET: ${{ secrets.OSU_CLIENT_SECRET }}
+    
+    - name: Run integration tests
+      run: |
+        # Запускаем FastAPI в фоне
+        cd backend
+        uvicorn main:app --host 0.0.0.0 --port 8000 &
+        sleep 5
+        pytest tests/ -v -k "integration"
+      env:
+        DB_HOST: 127.0.0.1
+        DB_NAME: test_db
+        MYSQL_USER: test_user
+        MYSQL_PASSWORD: test_password
+        MYSQL_PORT: 3306
+        MYSQL_IP: 127.0.0.1
+        JWT_SECRET: ${{ secrets.JWT_SECRET }}
+        BOT_API_KEY: ${{ secrets.BOT_API_KEY }}
+        OSU_CLIENT_ID: 12345
+        OSU_CLIENT_SECRET: ${{ secrets.OSU_CLIENT_SECRET }}
+        SERVER_PORT: 8000
+        SERVER_HOST: localhost
