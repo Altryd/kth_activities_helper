@@ -65,9 +65,9 @@ jobs:
       run: |
         # Запускаем FastAPI в фоне
         cd backend
-        uvicorn main:app --host 0.0.0.0 --port 8000 &
+        PYTHONPATH=.. uvicorn main:app --host 0.0.0.0 --port 8000 &
         sleep 5
-        PYTHONPATH=.. pytest tests/ -v -k "not integration"
+        PYTHONPATH=.. pytest tests/ -v -k "integration"
       env:
         DB_HOST: 127.0.0.1
         MYSQL_DATABASE: test_db
