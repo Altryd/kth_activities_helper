@@ -48,15 +48,18 @@ jobs:
         PYTHONPATH=.. pytest tests/ -v -k "not integration"
       env:
         DB_HOST: 127.0.0.1
-        DB_NAME: test_db
+        MYSQL_DATABASE: test_db
         MYSQL_USER: test_user
         MYSQL_PASSWORD: test_password
+        MYSQL_ROOT_PASSWORD: password
         MYSQL_PORT: 3306
         MYSQL_IP: 127.0.0.1
         JWT_SECRET: ${{ secrets.JWT_SECRET }}
         BOT_API_KEY: ${{ secrets.BOT_API_KEY }}
         OSU_CLIENT_ID: ${{ secrets.OSU_CLIENT_ID }}
         OSU_CLIENT_SECRET: ${{ secrets.OSU_CLIENT_SECRET }}
+        SERVER_PORT: 8000
+        SERVER_HOST: localhost
     
     - name: Run integration tests
       run: |
@@ -67,9 +70,10 @@ jobs:
         PYTHONPATH=.. pytest tests/ -v -k "not integration"
       env:
         DB_HOST: 127.0.0.1
-        DB_NAME: test_db
+        MYSQL_DATABASE: test_db
         MYSQL_USER: test_user
         MYSQL_PASSWORD: test_password
+        MYSQL_ROOT_PASSWORD: password
         MYSQL_PORT: 3306
         MYSQL_IP: 127.0.0.1
         JWT_SECRET: ${{ secrets.JWT_SECRET }}
