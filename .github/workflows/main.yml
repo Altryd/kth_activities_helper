@@ -45,7 +45,7 @@ jobs:
     - name: Run unit tests
       run: |
         cd backend
-        pytest tests/ -v -k "not integration"
+        PYTHONPATH=.. pytest tests/ -v -k "not integration"
       env:
         DB_HOST: 127.0.0.1
         DB_NAME: test_db
@@ -55,7 +55,7 @@ jobs:
         MYSQL_IP: 127.0.0.1
         JWT_SECRET: ${{ secrets.JWT_SECRET }}
         BOT_API_KEY: ${{ secrets.BOT_API_KEY }}
-        OSU_CLIENT_ID: 12345
+        OSU_CLIENT_ID: ${{ secrets.OSU_CLIENT_ID }}
         OSU_CLIENT_SECRET: ${{ secrets.OSU_CLIENT_SECRET }}
     
     - name: Run integration tests
@@ -64,7 +64,7 @@ jobs:
         cd backend
         uvicorn main:app --host 0.0.0.0 --port 8000 &
         sleep 5
-        pytest tests/ -v -k "integration"
+        PYTHONPATH=.. pytest tests/ -v -k "not integration"
       env:
         DB_HOST: 127.0.0.1
         DB_NAME: test_db
@@ -74,7 +74,7 @@ jobs:
         MYSQL_IP: 127.0.0.1
         JWT_SECRET: ${{ secrets.JWT_SECRET }}
         BOT_API_KEY: ${{ secrets.BOT_API_KEY }}
-        OSU_CLIENT_ID: 12345
+        OSU_CLIENT_ID: ${{ secrets.OSU_CLIENT_ID }}
         OSU_CLIENT_SECRET: ${{ secrets.OSU_CLIENT_SECRET }}
         SERVER_PORT: 8000
         SERVER_HOST: localhost
