@@ -1,2 +1,4 @@
 /.env
 /old/
+/discord_bot/.env
+/backend/.env

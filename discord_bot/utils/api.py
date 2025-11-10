@@ -63,3 +63,16 @@ async def update_roulette_stats(discord_id: str, roll: int, won: bool, streak: i
                 error = await response.json()
                 raise Exception(error.get("detail", "Unknown error"))
             return await response.json()
+
+
+async def get_roulette_leaderboard(limit: int = 20, offset: int = 0) -> list[dict]:
+    async with aiohttp.ClientSession() as session:
+        async with session.get(
+            f"{settings.SERVER_PROTOCOL}://{settings.SERVER_HOST}:{settings.SERVER_PORT}"
+            f"/get_roulette_stats?limit={limit}&offset={offset}",
+            headers=get_auth_headers()
+        ) as response:
+            if response.status != 200:
+                error = await response.json()
+                raise Exception(error.get("detail", "Unknown error"))
+            return await response.json()

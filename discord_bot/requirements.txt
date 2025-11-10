@@ -1,0 +1,17 @@
+aiosqlite
+aiohttp
+alembic
+pytest
+pytest-asyncio
+ossapi
+python-dotenv
+pydantic_settings
+sqlalchemy
+fastapi
+asyncmy
+cryptography
+python-multipart
+pyjwt
+pytest-cov
+discord.py
+pymysql

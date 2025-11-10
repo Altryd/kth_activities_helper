@@ -8,7 +8,7 @@ from backend.database import User, Match, Role  # ,  MatchStatus
 from backend.osu_api.get_user import get_users
 from backend.models import UserDTO, MatchResult
 from contextlib import asynccontextmanager
-from backend.routes import pairs, admin, user
+from backend.routes import pairs, admin, user, stats
 
 
 # @app.on_event("startup")
@@ -92,10 +92,11 @@ async def record_match(result: MatchResult,
         "new_loser_elo": round(new_loser_elo)
     }
 
+app.include_router(pairs.router)
+app.include_router(admin.admin_router)
+app.include_router(user.router)
+app.include_router(stats.router)
 
 if __name__ == "__main__":
     import uvicorn
-    app.include_router(pairs.router)
-    app.include_router(admin.admin_router)
-    app.include_router(user.router)
     uvicorn.run(app, host=settings.SERVER_HOST, port=settings.SERVER_PORT)

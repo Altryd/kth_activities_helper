@@ -1,3 +1,5 @@
+from typing import List
+
 import discord
 
 
@@ -38,5 +40,26 @@ def get_embed_for_roulette_stats(stats: dict, user: discord.User) -> discord.Emb
     embed.add_field(name="Текущий streak", value=stats['streak_current'], inline=True)
     embed.add_field(name="Достижения", value="\n".join(stats['achievements']) or "Нет достижений", inline=False)
     embed.set_thumbnail(url=user.avatar.url if user.avatar else None)
+    embed.set_footer(text="4unc Ky")
+    return embed
+
+
+def create_roulette_leaderboard_embed(stats: List[dict]) -> discord.Embed:
+    embed = discord.Embed(
+        title="Топ-20 игроков в додеп",
+        color=discord.Color.gold(),
+        description="```md\n  # Пользователь     │ Круток │ Выигрыши │ Winrate\n"
+    )
+
+    for i, player in enumerate(stats, 1):
+        name = player["username"][:16].ljust(16)  # жёстко 16 символов
+        rolls = str(player["roulette_rolls"]).rjust(6)
+        wins = str(player["roulette_wins"]).rjust(8)
+        winrate = f"{player['roulette_winrate'] or 0:.2f}%".rjust(7)
+
+        line = f"{i:2}. {name} │ {rolls} │ {wins} │ {winrate}\n"
+        embed.description += line
+
+    embed.description += "```"
     embed.set_footer(text="4unc Ky")
     return embed

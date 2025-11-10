@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 
 from pydantic import BaseModel
 from backend.database import Role  # , MatchStatus
@@ -15,9 +15,14 @@ class UserDTOPublic(BaseModel):
     osu_id: int
     username: str
     pp: float
-    elo_rating: float
+    elo_rating: float | None
     matches: List[MatchResult] | None
     active: bool
+    roulette_wins: None | int
+    roulette_rolls: None | int
+    roulette_winrate: Optional[float]
+    roulette_streak_current: None | int
+    roulette_achievements: None | list
 
     class Config:
         from_attributes = True

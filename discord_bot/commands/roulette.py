@@ -4,13 +4,13 @@ import discord
 from discord import app_commands, Interaction, File
 from discord.ext import commands
 from discord_bot.config import settings
-from discord_bot.utils.api import get_roulette_stats, update_roulette_stats
+from discord_bot.utils.api import get_roulette_stats, update_roulette_stats, get_roulette_leaderboard
 import random
 from datetime import timedelta
 import os
 from pydantic import BaseModel
 
-from discord_bot.utils.embeds import get_embed_for_roulette_stats
+from discord_bot.utils.embeds import get_embed_for_roulette_stats, create_roulette_leaderboard_embed
 
 
 class RouletteResult(BaseModel):
@@ -59,13 +59,13 @@ class RouletteCommands(commands.Cog):
         elif roll > mute_chance:
             if roll == 52:
                 achievements.append("пииисят_два")
-                message = f"Выпало {roll}! :zany_face: ПИСЯЯТ ДВААА ыыы :zany_face: Ты в муте на {mute_minutes} минут"
+                message = f"Выпало {roll}! :zany_face: ПИСЯЯТ ДВААА ыыы :zany_face: Ты в муте на {mute_minutes} мин."
             elif roll >= settings.OVERKILL:
                 achievements.append("overkill")
                 mute_minutes *= settings.OVERKILL_MUTE_MULTIPLIER
-                message = f"Выпало {roll}! :skull: OVERKILL :skull: Ты в муте на {mute_minutes} минут"
+                message = f"Выпало {roll}! :skull: OVERKILL :skull: Ты в муте на {mute_minutes} мин."
             else:
-                message = f"Выпало {roll}! Ты в муте на {mute_minutes} минут"
+                message = f"Выпало {roll}! Ты в муте на {mute_minutes} мин."
             result = RouletteResult(
                 text=message,
                 file=discord.File(self.MUTED_GIF, filename="muted.gif"),
@@ -109,6 +109,8 @@ class RouletteCommands(commands.Cog):
             self.history_ids[discord_id] = 1
             mute_chance = settings.BASE_MUTE_CHANCE - \
                 (settings.CHANCE_INCREASE_PER_STREAK * streak)
+            if mute_chance <= 40:
+                mute_chance = 40
             mute_minutes = settings.BASE_MUTE_MINUTES + \
                 (settings.MINUTES_INCREASE_PER_STREAK * streak)
 
@@ -127,7 +129,7 @@ class RouletteCommands(commands.Cog):
             await update_roulette_stats(discord_id, roll, roulette_result.won, new_streak, roulette_result.achievements)
 
             if roulette_result.won:
-                string_to_show += f"\nТвой streak теперь {new_streak}. В следующий раз шанс мута выше!"
+                string_to_show += f"\nТвой streak теперь {new_streak}. Но ничего, в следующий раз наказание будет жестче.."
 
             if mute_for and mute_for > 0:
                 try:
@@ -167,6 +169,17 @@ class RouletteCommands(commands.Cog):
         try:
             stats = await get_roulette_stats(discord_id)
             embed = get_embed_for_roulette_stats(stats, target_user)  # Функция ниже
+            await interaction.followup.send(embed=embed)  # TODO: embed..
+        except Exception as e:
+            await interaction.followup.send(f"Ошибка: {str(e)} :pleading_face:", ephemeral=False)
+
+    @app_commands.command(name="roulette_leaderboard", description="Показать статистику самых жестких додеперов")
+    @app_commands.describe()
+    async def roulette_leaderboard(self, interaction: Interaction):
+        await interaction.response.defer()
+        try:
+            stats = await get_roulette_leaderboard(limit=20)
+            embed = create_roulette_leaderboard_embed(stats)
             await interaction.followup.send(embed=embed)
         except Exception as e:
             await interaction.followup.send(f"Ошибка: {str(e)} :pleading_face:", ephemeral=False)

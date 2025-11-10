@@ -6,11 +6,13 @@ from pathlib import Path
 
 # Определяем путь к .env относительно корня проекта
 BASE_DIR = Path(__file__).resolve().parent  # Корневая директория проекта
-ENV_FILE = BASE_DIR / ".env"
+env_file_name = os.getenv("ENV_FILE_NAME", ".env")
+print(f"env_file_name discord={env_file_name}")
+ENV_FILE = BASE_DIR / env_file_name
 if not os.path.exists(ENV_FILE):
     # Корневая директория проекта
     BASE_DIR = Path(__file__).resolve().parent.parent
-    ENV_FILE = BASE_DIR / ".env"
+    ENV_FILE = BASE_DIR / env_file_name
 
 
 class Settings(BaseSettings):

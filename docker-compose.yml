@@ -3,7 +3,7 @@ services:
 
   mysql:
     image: mysql:latest
-    container_name: mysql_kth_sept
+    container_name: mysql_kth_nov
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_PASSWORD}
       MYSQL_DATABASE: ${MYSQL_DATABASE}
@@ -11,20 +11,51 @@ services:
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
     volumes:
       - db_data_mysql:/var/lib/mysql
+      - ./db_backups/latest.sql:/docker-entrypoint-initdb.d/01_setup_db.sql
     ports:
       - '${MYSQL_PORT}:3306'
+    healthcheck:
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped  # автоперезапуск
+    networks:
+      - kth-network
 
-  phpmyadmin:
-    image: phpmyadmin/phpmyadmin
-    container_name: phpmyadmin_kth_sept
-    environment:
-      PMA_HOST: mysql
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
-    ports:
-      - "8082:80"
+  fastapi:
+    build: ./backend
     depends_on:
-      - mysql
+      mysql:
+        condition: service_healthy  # 👈 ждём пока MySQL поднимется
+    environment:
+      DB_HOST: mysql
+      DB_NAME: ${MYSQL_DATABASE}
+    ports:
+      - "8001:8000"
+    restart: unless-stopped
+    networks:
+      - kth-network
+
+  discord-bot:
+    build: ./discord_bot
+    depends_on:
+      mysql:
+        condition: service_healthy
+      fastapi:
+        condition: service_started
+    environment:
+      DB_HOST: mysql
+      DISCORD_TOKEN: ${DISCORD_TOKEN}
+    restart: unless-stopped
+    networks:
+      - kth-network
+
 
 
 volumes:
   db_data_mysql:
+
+networks:
+  kth-network:
+    driver: bridge

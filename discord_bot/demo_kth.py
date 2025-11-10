@@ -1,8 +1,8 @@
 import discord
 from discord.ext import commands
 import asyncio
-from get_logger import logger
-from config import settings
+from discord_bot.get_logger import logger
+from discord_bot.config import settings
 
 intents = discord.Intents.default()
 intents.members = True
@@ -15,8 +15,8 @@ bot = commands.Bot(command_prefix='!', intents=intents)
 async def on_ready():
     logger.info(f'Бот {bot.user} готов и подключён к серверам.')
     try:
-        await bot.load_extension("commands.userinfo")
-        await bot.load_extension("commands.roulette")
+        await bot.load_extension("discord_bot.commands.userinfo")
+        await bot.load_extension("discord_bot.commands.roulette")
         synced = await bot.tree.sync()
         logger.info(f"Синхронизировано {len(synced)} команд.")
     except Exception as e:
