@@ -3,7 +3,7 @@ from fastapi import FastAPI, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List
 from backend.config import settings
-from backend.database import init_db, get_db
+from backend.database import init_db, get_db, async_engine
 from backend.database import User, Match, Role  # ,  MatchStatus
 from backend.osu_api.get_user import get_users
 from backend.models import UserDTO, MatchResult
@@ -19,7 +19,10 @@ from backend.routes import pairs, admin, user, stats
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await init_db()
-    yield
+    try:
+        yield
+    finally:
+        await async_engine.dispose()
 
 
 app = FastAPI(lifespan=lifespan)

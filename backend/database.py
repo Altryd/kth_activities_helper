@@ -4,9 +4,10 @@ from sqlalchemy.ext.asyncio import AsyncAttrs
 from sqlalchemy.orm import DeclarativeBase, relationship, mapped_column, Mapped
 from datetime import datetime
 import enum
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import sessionmaker
 from backend.config import settings
+from backend.db_engine import create_db_engine
 
 
 class Base(AsyncAttrs, DeclarativeBase):
@@ -96,9 +97,9 @@ class Match(Base):
         back_populates="matches_as_winner")
 
 
-async_engine = create_async_engine(
+async_engine = create_db_engine(
     settings.async_database_url,
-    echo=True)  # echo=True для отладки SQL-запросов
+    recycle_seconds=settings.DB_POOL_RECYCLE_SECONDS)
 async_session = sessionmaker(
     async_engine,
     class_=AsyncSession,

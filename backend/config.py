@@ -2,6 +2,7 @@ from dotenv import load_dotenv
 import os
 from ossapi import OssapiAsync
 from pydantic_settings import BaseSettings
+from pydantic import Field
 from pathlib import Path
 
 # Определяем путь к .env относительно корня проекта
@@ -28,6 +29,7 @@ class Settings(BaseSettings):
     BOT_API_KEY: str
     SERVER_PORT: int
     SERVER_HOST: str
+    DB_POOL_RECYCLE_SECONDS: int = Field(default=3600, gt=0)
 
     @property
     def async_database_url(self) -> str:

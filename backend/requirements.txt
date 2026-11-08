@@ -6,7 +6,7 @@ pytest-asyncio
 ossapi
 python-dotenv
 pydantic_settings
-sqlalchemy
+sqlalchemy[asyncio]>=2.0,<3
 fastapi
 asyncmy
 cryptography
