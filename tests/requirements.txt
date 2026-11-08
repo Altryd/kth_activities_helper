@@ -1,0 +1,9 @@
+discord.py>=2.5,<3
+aiohttp
+pydantic-settings
+python-dotenv
+SQLAlchemy[asyncio]>=2.0,<3
+aiosqlite
+asyncmy
+pytest
+pytest-asyncio
