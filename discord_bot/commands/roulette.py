@@ -1,16 +1,20 @@
-from typing import Tuple, Optional
+from typing import Optional
+import logging
 
 import discord
 from discord import app_commands, Interaction, File
 from discord.ext import commands
 from discord_bot.config import settings
-from discord_bot.utils.api import get_roulette_stats, update_roulette_stats, get_roulette_leaderboard
+from discord_bot.utils.api import APIError, get_roulette_stats, update_roulette_stats, get_roulette_leaderboard
 import random
 from datetime import timedelta
 import os
 from pydantic import BaseModel
 
 from discord_bot.utils.embeds import get_embed_for_roulette_stats, create_roulette_leaderboard_embed
+
+
+logger = logging.getLogger(__name__)
 
 
 class RouletteResult(BaseModel):
@@ -27,7 +31,7 @@ class RouletteResult(BaseModel):
 class RouletteCommands(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.history_ids = {}
+        self.history_ids = set()
         self.ROLE_X_ID = settings.ROLE_X_ID
         self.BOTS_COMMAND_ID = settings.BOTS_COMMAND_ID
         self.GIF_FOLDER = settings.GIF_FOLDER
@@ -85,7 +89,7 @@ class RouletteCommands(commands.Cog):
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
-        if message.author.bot:
+        if message.author.bot or message.guild is None:
             return
 
         if any(role.id == self.ROLE_X_ID for role in message.role_mentions):
@@ -100,48 +104,61 @@ class RouletteCommands(commands.Cog):
                     )
                 return
             discord_id = str(message.author.id)
-            if discord_id in self.history_ids and self.history_ids[discord_id] > 0:
-                await message.reply(f"Нононо мистер фиш, ожидайте вынесения приговора")
+            if discord_id in self.history_ids:
+                await message.reply("Нононо мистер фиш, ожидайте вынесения приговора")
                 return
-            stats = await get_roulette_stats(discord_id)
-            streak = stats.get('streak_current', 0)  # Вместо 0
-            # streak = 0
-            self.history_ids[discord_id] = 1
-            mute_chance = settings.BASE_MUTE_CHANCE - \
-                (settings.CHANCE_INCREASE_PER_STREAK * streak)
-            if mute_chance <= 40:
-                mute_chance = 40
-            mute_minutes = settings.BASE_MUTE_MINUTES + \
-                (settings.MINUTES_INCREASE_PER_STREAK * streak)
+            # Reserve before the first await so two messages cannot start two rolls.
+            self.history_ids.add(discord_id)
+            result_file = None
+            try:
+                stats = await get_roulette_stats(discord_id)
+                streak = stats.get('streak_current', 0)
+                mute_chance = settings.BASE_MUTE_CHANCE - \
+                    (settings.CHANCE_INCREASE_PER_STREAK * streak)
+                if mute_chance <= 40:
+                    mute_chance = 40
+                mute_minutes = settings.BASE_MUTE_MINUTES + \
+                    (settings.MINUTES_INCREASE_PER_STREAK * streak)
 
-            await message.reply(f"Роллю кубик... Если >{mute_chance}, то мут на {mute_minutes} мин.")
-            role = message.guild.get_role(self.ROLE_X_ID)
-            has_role = True if message.author.get_role(
-                self.ROLE_X_ID) else False
-            if not has_role and role:
-                await message.author.add_roles(role)
-                await message.reply("Ты пинганул @ X — теперь у тебя тоже эта роль! 😈")
-            roll = random.randint(1, 100)
-            roulette_result = await self.get_timeout_and_message(roll, mute_chance, mute_minutes)
-            string_to_show, file, mute_for = roulette_result.text, roulette_result.file, roulette_result. mute_minutes
-            new_streak = streak + 1 if roulette_result.won else 0
+                await message.reply(f"Роллю кубик... Если >{mute_chance}, то мут на {mute_minutes} мин.")
+                role = message.guild.get_role(self.ROLE_X_ID)
+                has_role = True if message.author.get_role(
+                    self.ROLE_X_ID) else False
+                if not has_role and role:
+                    await message.author.add_roles(role)
+                    await message.reply("Ты пинганул @ X - теперь у тебя тоже эта роль! 😈")
+                roll = random.randint(1, 100)
+                roulette_result = await self.get_timeout_and_message(roll, mute_chance, mute_minutes)
+                string_to_show, file, mute_for = roulette_result.text, roulette_result.file, roulette_result.mute_minutes
+                result_file = file
+                new_streak = streak + 1 if roulette_result.won else 0
 
-            await update_roulette_stats(discord_id, roll, roulette_result.won, new_streak, roulette_result.achievements)
+                await update_roulette_stats(discord_id, roll, roulette_result.won, new_streak, roulette_result.achievements)
 
-            if roulette_result.won:
-                string_to_show += f"\nТвой streak теперь {new_streak}. Но ничего, в следующий раз наказание будет жестче.."
+                if roulette_result.won:
+                    string_to_show += f"\nТвой streak теперь {new_streak}. Но ничего, в следующий раз наказание будет жестче.."
 
-            if mute_for and mute_for > 0:
-                try:
-                    await message.author.timeout(timedelta(minutes=mute_for))
-                except discord.Forbidden:
-                    string_to_show = f"Выпало {roll}, но блин, у меня нет прав на мут.. :( Так бы я тебя замутил :smiling_imp: "
-                    file = None
-            await message.reply(string_to_show, file=file)
-            self.history_ids[discord_id] = 0
+                if mute_for and mute_for > 0:
+                    try:
+                        await message.author.timeout(timedelta(minutes=mute_for))
+                    except discord.Forbidden:
+                        string_to_show = f"Выпало {roll}, но блин, у меня нет прав на мут.. :( Так бы я тебя замутил :smiling_imp: "
+                        file = None
+                await message.reply(string_to_show, file=file)
+            except APIError as exc:
+                logger.warning("Ошибка API рулетки для %s: %s", discord_id, exc)
+                await message.reply(str(exc))
+            except Exception:
+                logger.exception("Ошибка рулетки для %s", discord_id)
+                await message.reply("Не удалось завершить рулетку. Попробуй позже.")
+            finally:
+                self.history_ids.discard(discord_id)
+                if result_file is not None:
+                    result_file.close()
 
     @app_commands.command(name="простите-пожалуйста",
                           description="Снять роль @X с позором")
+    @app_commands.guild_only()
     async def prostite_pozhaluysta(self, interaction: Interaction):
         await interaction.response.defer()
         role = interaction.guild.get_role(self.ROLE_X_ID)
@@ -161,7 +178,7 @@ class RouletteCommands(commands.Cog):
             await interaction.followup.send("У меня нет прав снять роль. Сообщи об этом @Boriska")
 
     @app_commands.command(name="roulette_stats", description="Показать статистику рулетки пользователя")
-    @app_commands.describe(user="Пользователь (по умолчанию — ты)")
+    @app_commands.describe(user="Пользователь (по умолчанию - ты)")
     async def roulette_stats(self, interaction: Interaction, user: Optional[discord.User] = None):
         await interaction.response.defer()
         target_user = user or interaction.user

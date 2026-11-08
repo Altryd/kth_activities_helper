@@ -141,7 +141,7 @@ async def preview_csv(
     """
     Загружает CSV-файл, парсит его и возвращает preview: что добавится/обновится.
     CSV формат: username,rating[,discord_id,osu_id,pp] (опционально discord_id,osu_id,pp).
-    Не применяет изменения — только показывает для подтверждения админом.
+    Не применяет изменения - только показывает для подтверждения админом.
     """
     content = await file.read()
     content_str = content.decode('utf-8')

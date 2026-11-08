@@ -94,7 +94,7 @@ async def create_pairs(request: CreatePairsRequest,
             skip = False
             for match in player.matches:
                 if match.match_date < one_year_ago:
-                    continue  # Матч старше 1 года — ok
+                    continue  # Матч старше 1 года - ok
                 if match.player1_id == opponent.osu_id or match.player2_id == opponent.osu_id:
                     skip = True
                     break

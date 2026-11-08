@@ -2,3 +2,8 @@
 /old/
 /discord_bot/.env
 /backend/.env
+/.idea/inspectionProfiles/profiles_settings.xml
+/.idea/.gitignore
+/.idea/kth_activities_helper.iml
+/.idea/modules.xml
+/.idea/vcs.xml

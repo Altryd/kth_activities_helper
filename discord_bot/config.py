@@ -1,7 +1,6 @@
-from dotenv import load_dotenv
 import os
-from ossapi import OssapiAsync
 from pydantic_settings import BaseSettings
+from pydantic import Field
 from pathlib import Path
 
 # Определяем путь к .env относительно корня проекта
@@ -29,7 +28,13 @@ class Settings(BaseSettings):
     BASE_MUTE_MINUTES: int
     OVERKILL_MUTE_MULTIPLIER: int
     MINUTES_INCREASE_PER_STREAK: int
-    GIF_FOLDER: str
+    GIF_FOLDER: str = str(Path(__file__).resolve().parent / "resources")
+    API_TIMEOUT_SECONDS: float = Field(default=15, gt=0)
+    TEAM_GUILD_ID: int | None = None
+    TEAM_ADMIN_ROLE_ID: int | None = None
+    TEAM_ADMIN_ROLE_NAME: str = "Секретарь ЦК импрува"
+    TEAM_TEXT_CATEGORY_ID: int = 563361695699959811
+    TEAM_VOICE_CATEGORY_ID: int = 571337094165954610
 
     class Config:
         env_file = ENV_FILE

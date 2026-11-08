@@ -6,12 +6,12 @@ pytest-asyncio
 ossapi
 python-dotenv
 pydantic_settings
-sqlalchemy
+sqlalchemy[asyncio]>=2.0,<3
 fastapi
 asyncmy
 cryptography
 python-multipart
 pyjwt
 pytest-cov
-discord.py
+discord.py>=2.5,<3
 pymysql
