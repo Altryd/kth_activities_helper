@@ -35,6 +35,10 @@ class Settings(BaseSettings):
     TEAM_ADMIN_ROLE_NAME: str = "Секретарь ЦК импрува"
     TEAM_TEXT_CATEGORY_ID: int = 563361695699959811
     TEAM_VOICE_CATEGORY_ID: int = 571337094165954610
+    TEAM_HELPER_BOT_IDS: list[int] = Field(default_factory=lambda: [
+        289066747443675143, 297073686916366336,
+        981205694340546571, 1069584535521595502,
+    ])
 
     class Config:
         env_file = ENV_FILE

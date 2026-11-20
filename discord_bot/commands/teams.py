@@ -2,6 +2,7 @@
 
 import io
 import logging
+import re
 
 import discord
 from discord import app_commands
@@ -30,14 +31,71 @@ def role_can_view(channel, role):
     return channel.overwrites_for(role).view_channel is True
 
 
-def voice_channels_for_role(channels, role):
+def has_team_brackets(name):
+    return re.search(r"\[[^\[\]]*\]", name) is not None
+
+
+def is_team_role(role, staff_role=None):
+    return (role is not None and has_team_brackets(role.name)
+            and not role.is_default() and not role.managed
+            and not role.permissions.administrator
+            and (staff_role is None or role.id != staff_role.id))
+
+
+async def resolve_category(guild, selected, default_id, label):
+    channel_id = selected.id if selected is not None else default_id
+    if selected is not None and selected.guild.id != guild.id:
+        raise TeamError(f"{label}: выбери категорию этого сервера.")
+    try:
+        category = await guild.fetch_channel(channel_id)
+    except (discord.NotFound, discord.Forbidden, discord.InvalidData) as exc:
+        raise TeamError(f"{label}: категория {channel_id} недоступна. Выбери категорию в параметрах команды.") from exc
+    if not isinstance(category, discord.CategoryChannel):
+        raise TeamError(f"{label}: нужен именно канал-категория.")
+    return category
+
+
+async def helper_bot_members(guild):
+    members = []
+    for bot_id in dict.fromkeys(settings.TEAM_HELPER_BOT_IDS):
+        try:
+            member = await guild.fetch_member(bot_id)
+        except discord.HTTPException as exc:
+            raise TeamError(f"Не удалось найти osu!-бота {bot_id} на сервере. Проверь TEAM_HELPER_BOT_IDS.") from exc
+        if not member.bot:
+            raise TeamError(f"Участник {bot_id} не бот. Проверь TEAM_HELPER_BOT_IDS.")
+        members.append(member)
+    return members
+
+
+def voice_channels_for_role(channels, role, category_id=None):
+    if not is_team_role(role):
+        return []
+    if category_id is None:
+        category_id = settings.TEAM_VOICE_CATEGORY_ID
     return [channel for channel in channels
             if isinstance(channel, discord.VoiceChannel)
-            and channel.category_id == settings.TEAM_VOICE_CATEGORY_ID
+            and channel.category_id == category_id
             and role_can_view(channel, role)]
 
 
-async def create_team_resources(guild, name, members, text_category, voice_category, staff_role, reason):
+async def fetch_voice_candidates(guild, role, category_id):
+    # The bulk fetch_channels() fails if ANY guild channel has an unknown type.
+    # Discover known voice IDs from the gateway cache; verify each one over REST.
+    candidates = voice_channels_for_role(guild.voice_channels, role, category_id)
+    verified = []
+    for candidate in candidates:
+        try:
+            channel = await guild.fetch_channel(candidate.id)
+        except (discord.NotFound, discord.Forbidden, discord.InvalidData):
+            logger.warning("Пропущен недоступный или неподдерживаемый голосовой канал %s", candidate.id)
+            continue
+        if voice_channels_for_role([channel], role, category_id):
+            verified.append(channel)
+    return verified
+
+
+async def create_team_resources(guild, name, members, text_category, voice_category, staff_role, reason, *, helper_bots=()):
     created = []
     try:
         role = await guild.create_role(name=name, colour=discord.Colour.random(), reason=reason)
@@ -51,7 +109,14 @@ async def create_team_resources(guild, name, members, text_category, voice_categ
             guild.me: discord.PermissionOverwrite(view_channel=True, send_messages=True,
                                                  manage_channels=True, manage_roles=True),
         }
-        text = await guild.create_text_channel(name, category=text_category, overwrites=overwrites, reason=reason)
+        text_overwrites = dict(overwrites)
+        for helper in helper_bots:
+            if helper not in text_overwrites:
+                text_overwrites[helper] = discord.PermissionOverwrite(
+                    view_channel=True, read_message_history=True, send_messages=True,
+                    embed_links=True, attach_files=True,
+                )
+        text = await guild.create_text_channel(name, category=text_category, overwrites=text_overwrites, reason=reason)
         created.append(text)
         voice = await guild.create_voice_channel(name, category=voice_category, overwrites=overwrites, reason=reason)
         created.append(voice)
@@ -86,6 +151,8 @@ def read_only(overwrite, *, preserve_access=False):
 
 async def archive_permissions(channel, role, members, reason):
     """Preserve unrelated overwrites and attempt rollback on a partial failure."""
+    if not is_team_role(role):
+        raise TeamError("Архивировать можно только командную роль с квадратными скобками [ ], например [KTH] Team.")
     changed = []
     original = channel.overwrites
     try:
@@ -110,12 +177,14 @@ async def archive_permissions(channel, role, members, reason):
 
 
 class DeleteVoiceView(discord.ui.View):
-    def __init__(self, guild_id, author_id, role_id, channel_ids):
+    def __init__(self, guild_id, author_id, role_id, channel_ids, voice_category_id=None):
         super().__init__(timeout=300)
         self.guild_id = guild_id
         self.author_id = author_id
         self.role_id = role_id
         self.channel_ids = frozenset(channel_ids)
+        self.voice_category_id = (voice_category_id if voice_category_id is not None
+                                  else settings.TEAM_VOICE_CATEGORY_ID)
         self.finished = False
         self.message = None
 
@@ -150,17 +219,18 @@ class DeleteVoiceView(discord.ui.View):
         try:
             roles = await interaction.guild.fetch_roles()
             role = discord.utils.get(roles, id=self.role_id)
-            channels = await interaction.guild.fetch_channels()
-            eligible = {c.id: c for c in voice_channels_for_role(channels, role)} if role else {}
             for channel_id in self.channel_ids:
-                channel = eligible.get(channel_id)
-                if channel is None:
+                if not is_team_role(role, admin_role(interaction.user)):
                     skipped.append(channel_id)
                     continue
                 try:
+                    channel = await interaction.guild.fetch_channel(channel_id)
+                    if not voice_channels_for_role([channel], role, self.voice_category_id):
+                        skipped.append(channel_id)
+                        continue
                     await channel.delete(reason=f"Архив команды; организатор {interaction.user.id}")
                     removed.append(channel_id)
-                except discord.NotFound:
+                except (discord.NotFound, discord.InvalidData):
                     skipped.append(channel_id)
                 except discord.HTTPException:
                     logger.exception("Ошибка удаления голосового канала %s", channel_id)
@@ -197,15 +267,21 @@ class TeamCommands(commands.Cog):
             raise TeamError("Команда недоступна на этом сервере.")
         if admin_role(interaction.user) is None:
             raise TeamError("Нужна роль организатора команд.")
-        for category_id in (settings.TEAM_TEXT_CATEGORY_ID, settings.TEAM_VOICE_CATEGORY_ID):
-            if not isinstance(guild.get_channel(category_id), discord.CategoryChannel):
-                raise TeamError("На этом сервере не настроены категории команд.")
+        if settings.TEAM_GUILD_ID is None and not any(
+            isinstance(guild.get_channel(category_id), discord.CategoryChannel)
+            for category_id in (settings.TEAM_TEXT_CATEGORY_ID, settings.TEAM_VOICE_CATEGORY_ID)
+        ):
+            raise TeamError("Для сервера без категорий по умолчанию укажи TEAM_GUILD_ID в настройках бота.")
         return True
 
     async def cog_app_command_error(self, interaction, error):
         original = getattr(error, "original", error)
         if isinstance(original, TeamError):
             text = str(original)
+        elif isinstance(original, discord.InvalidData):
+            logger.error("Неподдерживаемый канал при выполнении команды: %s", original,
+                         exc_info=(type(original), original, original.__traceback__))
+            text = "Discord вернул неподдерживаемый тип выбранного канала. Вызови команду в обычном текстовом канале."
         else:
             logger.error("Ошибка команды команды/архив: %s", error, exc_info=(type(error), error, error.__traceback__))
             text = "Не удалось выполнить команду. Проверь права бота и журнал ошибок."
@@ -218,12 +294,18 @@ class TeamCommands(commands.Cog):
     @app_commands.guild_only()
     @app_commands.rename(first_member="first-member", second_member="second-member", third_member="third-member",
                          fourth_member="fourth-member", fifth_member="fifth-member", sixth_member="sixth-member",
-                         seventh_member="seventh-member", eighth_member="eighth-member")
+                         seventh_member="seventh-member", eighth_member="eighth-member",
+                         text_category="text-category", voice_category="voice-category")
+    @app_commands.describe(team="Название команды; для архивирования нужны скобки, например [KTH] Team",
+                           text_category="Категория текстового канала (по умолчанию из настроек)",
+                           voice_category="Категория голосового канала (по умолчанию из настроек)")
     async def create_team(self, interaction: discord.Interaction, team: str,
                           first_member: discord.Member, second_member: discord.Member,
                           third_member: discord.Member | None = None, fourth_member: discord.Member | None = None,
                           fifth_member: discord.Member | None = None, sixth_member: discord.Member | None = None,
-                          seventh_member: discord.Member | None = None, eighth_member: discord.Member | None = None):
+                          seventh_member: discord.Member | None = None, eighth_member: discord.Member | None = None,
+                          text_category: discord.CategoryChannel | None = None,
+                          voice_category: discord.CategoryChannel | None = None):
         await interaction.response.defer(ephemeral=True)
         guild = interaction.guild
         if guild.id in self.creating:
@@ -243,10 +325,13 @@ class TeamCommands(commands.Cog):
             roles = await guild.fetch_roles()
             if any(role.name.casefold() == name.casefold() for role in roles):
                 raise TeamError("Роль с таким названием уже существует.")
+            text_category = await resolve_category(guild, text_category, settings.TEAM_TEXT_CATEGORY_ID, "Текстовая категория")
+            voice_category = await resolve_category(guild, voice_category, settings.TEAM_VOICE_CATEGORY_ID, "Голосовая категория")
+            helpers = await helper_bot_members(guild)
             role, text, voice = await create_team_resources(
-                guild, name, members, guild.get_channel(settings.TEAM_TEXT_CATEGORY_ID),
-                guild.get_channel(settings.TEAM_VOICE_CATEGORY_ID), admin_role(interaction.user),
+                guild, name, members, text_category, voice_category, admin_role(interaction.user),
                 reason=f"Создание команды; организатор {interaction.user.id}",
+                helper_bots=helpers,
             )
             await interaction.followup.send(f"Команда {role.mention} создана. Участников: {len(members)}.\n{text.mention} · {voice.mention}",
                                             ephemeral=True, allowed_mentions=discord.AllowedMentions.none())
@@ -255,22 +340,28 @@ class TeamCommands(commands.Cog):
 
     @app_commands.command(name="archive", description="Закрыть командный чат для записи и сохранить доступ участникам")
     @app_commands.guild_only()
-    @app_commands.describe(role="Командная роль; без параметра - список ролей этого канала")
-    async def archive(self, interaction: discord.Interaction, role: discord.Role | None = None):
+    @app_commands.rename(text_category="text-category", voice_category="voice-category")
+    @app_commands.describe(role="Роль с [ ]; без параметра - список подходящих ролей этого канала",
+                           text_category="Категория текущего текстового канала (по умолчанию из настроек)",
+                           voice_category="Категория голосовых каналов (по умолчанию из настроек)")
+    async def archive(self, interaction: discord.Interaction, role: discord.Role | None = None,
+                      text_category: discord.CategoryChannel | None = None,
+                      voice_category: discord.CategoryChannel | None = None):
         await interaction.response.defer(ephemeral=True)
         guild = interaction.guild
+        if role is not None and not has_team_brackets(role.name):
+            raise TeamError("Архивировать можно только роль с квадратными скобками [ ], например [KTH] Team.")
         if interaction.channel_id in self.archiving:
             raise TeamError("Этот канал уже архивируется.")
         self.archiving.add(interaction.channel_id)
         try:
-            channels = await guild.fetch_channels()
-            channel = discord.utils.get(channels, id=interaction.channel_id)
-            if not isinstance(channel, discord.TextChannel) or channel.category_id != settings.TEAM_TEXT_CATEGORY_ID:
-                raise TeamError("Вызови /archive в текстовом канале команды, в настроенной категории.")
+            channel = await guild.fetch_channel(interaction.channel_id)
+            text_category = await resolve_category(guild, text_category, settings.TEAM_TEXT_CATEGORY_ID, "Текстовая категория")
+            if not isinstance(channel, discord.TextChannel) or channel.category_id != text_category.id:
+                raise TeamError("Вызови /archive в текстовом канале команды, в настроенной категории или выбранной text-category.")
             roles = await guild.fetch_roles()
             staff = admin_role(interaction.user)
-            eligible = [r for r in roles if not r.is_default() and not r.managed
-                        and not r.permissions.administrator and r.id != staff.id and role_can_view(channel, r)]
+            eligible = [r for r in roles if is_team_role(r, staff) and role_can_view(channel, r)]
             if role is None:
                 names = "\n".join(f"{r.name} (ID: {r.id})" for r in eligible) or "Нет командных ролей с явным доступом."
                 if len(names) <= 1800:
@@ -282,11 +373,13 @@ class TeamCommands(commands.Cog):
                 return
             role = discord.utils.get(eligible, id=role.id)
             if role is None:
-                raise TeamError("Выбери командную роль с явным доступом к этому каналу.")
+                raise TeamError("Выбери командную роль с [ ] и явным доступом к этому каналу.")
             if not channel.permissions_for(guild.me).manage_roles:
                 raise TeamError("Боту нужно право «Управлять ролями» в этом канале для изменения доступа.")
             # REST pagination avoids incomplete caches and the old 1000-member cutoff.
             members = [member async for member in guild.fetch_members(limit=None) if role in member.roles]
+            voice_category = await resolve_category(guild, voice_category, settings.TEAM_VOICE_CATEGORY_ID, "Голосовая категория")
+            voice = await fetch_voice_candidates(guild, role, voice_category.id)
             await archive_permissions(channel, role, members, reason=f"Архив команды; организатор {interaction.user.id}")
             summary = f"Канал переведён в архив. Доступ к чтению сохранён для {len(members)} участников."
             try:
@@ -298,9 +391,8 @@ class TeamCommands(commands.Cog):
             participants = "\n".join(f"{m} (ID: {m.id})" for m in members) or "Участников с ролью нет."
             await interaction.followup.send(summary, ephemeral=True,
                                             file=discord.File(io.BytesIO(participants.encode("utf-8")), filename="participants.txt"))
-            voice = voice_channels_for_role(channels, role)
             if voice:
-                view = DeleteVoiceView(guild.id, interaction.user.id, role.id, [c.id for c in voice])
+                view = DeleteVoiceView(guild.id, interaction.user.id, role.id, [c.id for c in voice], voice_category.id)
                 names = ", ".join(c.mention for c in voice)
                 view.message = await interaction.followup.send(
                     "Текстовый канал уже архивирован. Удалить голосовые каналы?\n" + names[:1700],

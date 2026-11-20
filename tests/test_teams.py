@@ -20,9 +20,9 @@ def make_role(role_id=50, name="[T] Team"):
     return role
 
 
-def make_member(member_id=60, roles=()):
+def make_member(member_id=60, roles=(), *, bot=False):
     member = MagicMock(spec=discord.Member)
-    member.id, member.roles = member_id, list(roles)
+    member.id, member.roles, member.bot = member_id, list(roles), bot
     member.add_roles = AsyncMock()
     return member
 
@@ -48,12 +48,28 @@ def make_interaction(guild, staff, channel_id=40):
     )
 
 
+def make_category(category_id, guild_id=1):
+    category = MagicMock(spec=discord.CategoryChannel)
+    category.id, category.guild = category_id, SimpleNamespace(id=guild_id)
+    return category
+
+
+def set_channels(guild, *channels):
+    guild.known_channels.update({channel.id: channel for channel in channels})
+    guild.voice_channels = [c for c in guild.known_channels.values() if isinstance(c, discord.VoiceChannel)]
+
+
 def make_guild():
     guild = MagicMock(spec=discord.Guild)
     guild.id = 1
     guild.me, guild.default_role = make_member(999), make_role(1, "@everyone")
     guild.me.guild_permissions = discord.Permissions.all()
-    guild.get_channel.return_value = MagicMock(spec=discord.CategoryChannel)
+    guild.known_channels = {20: make_category(20), 30: make_category(30)}
+    guild.get_channel.side_effect = guild.known_channels.get
+    guild.fetch_channel = AsyncMock(side_effect=lambda channel_id: guild.known_channels[channel_id])
+    guild.fetch_channels = AsyncMock(side_effect=discord.InvalidData("Unknown channel type 20 for channel ID 999"))
+    guild.voice_channels = []
+    guild.fetch_member = AsyncMock(side_effect=lambda member_id: make_member(member_id, bot=True))
     guild.fetch_roles = AsyncMock(return_value=[])
     return guild
 
@@ -140,7 +156,7 @@ async def test_archive_fetches_all_members_and_works_beyond_1000(monkeypatch):
     guild, staff, role = make_guild(), make_role(10), make_role()
     channel = make_channel(40, settings.TEAM_TEXT_CATEGORY_ID, role)
     guild.fetch_roles = AsyncMock(return_value=[role, staff])
-    guild.fetch_channels = AsyncMock(return_value=[channel])
+    set_channels(guild, channel)
     members = [make_member(n + 100, [role]) for n in range(1001)]
 
     async def fetch_members(*, limit):
@@ -161,7 +177,7 @@ async def test_archive_rejects_unrelated_channel_and_role():
     guild, staff, role = make_guild(), make_role(10), make_role()
     channel = make_channel(40, 999, role)
     guild.fetch_roles = AsyncMock(return_value=[role, staff])
-    guild.fetch_channels = AsyncMock(return_value=[channel])
+    set_channels(guild, channel)
     cog, ctx = teams.TeamCommands(None), make_interaction(guild, staff)
     with pytest.raises(teams.TeamError, match="настроенной категории"):
         await cog.archive.callback(cog, ctx, role)
@@ -181,7 +197,7 @@ async def test_delete_matches_ids_not_names_and_rechecks_access():
     lost_access = make_channel(73, 30, role, discord.VoiceChannel)
     lost_access.overwrites = {}
     guild.fetch_roles = AsyncMock(return_value=[role, staff])
-    guild.fetch_channels = AsyncMock(return_value=[requested, same_name, moved, lost_access])
+    set_channels(guild, requested, same_name, moved, lost_access)
     view = teams.DeleteVoiceView(1, 60, role.id, [70, 72, 73])
     ctx = make_interaction(guild, staff)
     assert await view.interaction_check(ctx)
@@ -218,7 +234,7 @@ async def test_cancel_and_timeout_keep_voice_channels():
     timed.stop()
 
 
-async def test_module_checks_server_role_and_categories():
+async def test_module_checks_server_role_and_categories(monkeypatch):
     guild, staff = make_guild(), make_role(10)
     cog, ctx = teams.TeamCommands(None), make_interaction(guild, staff)
     assert await cog.interaction_check(ctx)
@@ -229,6 +245,7 @@ async def test_module_checks_server_role_and_categories():
     with pytest.raises(teams.TeamError, match="роль организатора"):
         await cog.interaction_check(ctx)
     ctx.user.roles = [staff]
-    guild.get_channel.return_value = None
-    with pytest.raises(teams.TeamError, match="категории"):
+    guild.known_channels.clear()
+    monkeypatch.setattr(settings, "TEAM_GUILD_ID", None)
+    with pytest.raises(teams.TeamError, match="TEAM_GUILD_ID"):
         await cog.interaction_check(ctx)

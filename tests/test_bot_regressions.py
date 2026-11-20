@@ -39,7 +39,7 @@ async def test_setup_loads_all_commands_without_rating_and_ready_does_not_reload
         assert {"create-team", "archive", "userinfo", "userinfo_id", "register", "roulette_stats"} <= names
         assert "rating" not in names
         create = bot.tree.get_command("create-team")
-        assert len(create.parameters) == 9
+        assert len(create.parameters) == 11
         assert create.parameters[1].display_name == "first-member"
         await bot.on_ready()
         await bot.on_ready()
